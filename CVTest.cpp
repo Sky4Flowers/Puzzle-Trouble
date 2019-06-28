@@ -25,7 +25,7 @@ Mat frame, gray, finalImage;
 vector<Mat> puzzlePieces;
 
 //Variables for UI
-Mat3b canvas;
+//Mat3b canvas; // for displaying the button above the image (only blinking yet)
 Rect button;
 
 int main(int, void*)
@@ -567,16 +567,16 @@ void initUI() {
 
 void updateUI() {
 	// The canvas
-	canvas = Mat3b(finalImage.rows + button.height, finalImage.cols, Vec3b(0, 0, 0));
+	//canvas = Mat3b(finalImage.rows + button.height, finalImage.cols, Vec3b(0, 0, 0));
 
 	// Draw the button
-	canvas(button) = Vec3b(200, 200, 200);
-	putText(canvas(button), "Start", Point(button.width*0.35, button.height*0.7), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0));
+	finalImage(button) = Vec3b(200, 200, 200);
+	putText(finalImage(button), "Start", Point(button.width*0.35, button.height*0.7), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0));
 
 	putText(finalImage, "You won", Point(150, 150), FONT_HERSHEY_SIMPLEX, 2, Scalar(128), 2);
 
 	// Draw the image
-	finalImage.copyTo(canvas(Rect(0, button.height, finalImage.cols, finalImage.rows)));
+	//finalImage.copyTo(canvas(Rect(0, button.height, finalImage.cols, finalImage.rows)));
 
 	// Setup callback function
 	setMouseCallback(streamWindowName, callBackFunc);
@@ -589,14 +589,14 @@ void callBackFunc(int event, int x, int y, int flags, void* userdata)
 		if (button.contains(Point(x, y)))
 		{
 			cout << "Clicked!" << endl;
-			rectangle(canvas(button), button, Scalar(0, 0, 255), 2);
+			rectangle(finalImage(button), button, Scalar(0, 0, 255), 2);
 		}
 	}
 	if (event == EVENT_LBUTTONUP)
 	{
-		rectangle(canvas, button, Scalar(200, 200, 200), 2);
+		rectangle(finalImage, button, Scalar(200, 200, 200), 2);
 	}
 
-	imshow(streamWindowName, canvas);
+	imshow(streamWindowName, finalImage);
 	waitKey(1);
 }
