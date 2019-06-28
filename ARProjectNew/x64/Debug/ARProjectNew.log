@@ -1,0 +1,73 @@
+﻿  CVTest.cpp
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(4): warning C4305: 'initializing': truncation from 'double' to 'float'
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(107): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=float
+          ]
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(108): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=float
+          ]
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(186): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=float
+          ]
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(187): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=float
+          ]
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(211): warning C4244: 'argument': conversion from 'double' to 'const unsigned __int64', possible loss of data
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(282): warning C4244: '=': conversion from '_Tp' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=double
+          ]
+          and
+          [
+              _Tp=float
+          ]
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(283): warning C4244: '=': conversion from '_Tp' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=double
+          ]
+          and
+          [
+              _Tp=float
+          ]
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(287): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(337): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=float
+          ]
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(338): warning C4244: '=': conversion from 'double' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=float
+          ]
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(339): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(340): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(458): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(496): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=float
+          ]
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(509): warning C4244: 'argument': conversion from 'float' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=int
+          ]
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(480): warning C4101: 'rotationMatrixArray': unreferenced local variable
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(550): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(557): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(558): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(559): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(563): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\lee17017\source\repos\arprojectnew\arprojectnew\cvtest.cpp(564): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+  ARProjectNew.vcxproj -> C:\Users\Lee17017\source\repos\ARProjectNew\x64\Debug\ARProjectNew.exe
