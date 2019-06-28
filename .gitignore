@@ -1,8 +1,11 @@
 #ignore everything
 *
 
+
 !.gitignore
 !*.h
 !*.cpp
 !*.txt
+!*.jpg
+!*.png
 !*/
