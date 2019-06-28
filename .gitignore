@@ -1,6 +1,7 @@
 #ignore everything
 *
 
+!.gitignore
 !*.h
 !*.cpp
 !*.txt
