@@ -23,3 +23,6 @@ void CaptureLoop();
 bool isRotationMatrix(Mat &R);
 Vec3f rotationMatrixToEulerAngles(Mat &R);
 int Sign(float x);
+void initUI();
+void updateUI();
+void callBackFunc(int event, int x, int y, int flags, void* userdata);

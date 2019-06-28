@@ -1,4 +1,5 @@
 #include "CVTest.h"
+
 const int thresholdMaxValue = 255;
 const int thresholdMaxType = 4;
 const float markerSize = 0.043;
@@ -22,6 +23,11 @@ VideoCapture cap(0);
 vector<Vec4i> hierarchy;
 Mat frame, gray, finalImage;
 Mat apple;
+
+//Variables for UI
+Mat3b canvas;
+Rect button;
+
 int main(int, void*)
 {
 	if (!cap.isOpened()) {
@@ -43,6 +49,9 @@ int main(int, void*)
 	createTrackbar("levels+3", streamWindowName, &levels, 7, on_trackbar, &levels);
 	namedWindow(markerWindowName, CV_WINDOW_NORMAL);
 	resizeWindow(markerWindowName, 120, 120);
+
+	initUI();
+
 	while (cap.read(frame)) {
 		CaptureLoop();
 		if (waitKey(1) == 27)
@@ -56,7 +65,6 @@ int main(int, void*)
 static void on_trackbar(int pos, void* slider_value) {
 	*((int*)slider_value) = pos;
 }
-
 
 int subpixSampleSafe(const Mat& finalImage, const Point2f& subPixel) {
 	// Point is float, slide 14
@@ -115,9 +123,8 @@ Mat calculateStrip(double dx, double dy, MyStrip& myStrip) {
 	return Mat(stripSize, CV_8UC1);
 }
 
-
 void CaptureLoop() {
-	flip(frame, frame, 1);
+	//flip(frame, frame, 1);
 	finalImage = frame.clone();
 	//Convert to greyscale
 	cvtColor(frame, gray, CV_BGR2GRAY);
@@ -455,7 +462,7 @@ void CaptureLoop() {
 		float rotAngle = 0;
 		if (normalizer != 0) {
 			xDirection /= normalizer;
-			rotAngle = - Sign(yDirection) * acos(xDirection * 1) / 3.1415 * 180;
+			rotAngle = -Sign(yDirection) * acos(xDirection * 1) / 3.1415 * 180;
 			cout << rotAngle << endl;
 		}
 		else {
@@ -491,8 +498,6 @@ void CaptureLoop() {
 			//cout << endl;
 		}
 
-		
-
 		Point2f appleCenter((apple.cols - 1) / 2.0, (apple.rows - 1) / 2.0);
 		Mat rotationMatrix = getRotationMatrix2D(appleCenter, rotAngle, 1.0);
 		// determine bounding rectangle, center not relevant
@@ -521,10 +526,11 @@ void CaptureLoop() {
 
 	}//End of contour loop
 
+	//Add UI
+	updateUI();
 
 	isFirstMarker = true;
 	imshow(streamWindowName, finalImage);
-
 }
 
 // Checks if a matrix is a valid rotation matrix.
@@ -536,7 +542,6 @@ bool isRotationMatrix(Mat &R)
 	Mat I = Mat::eye(3, 3, shouldBeIdentity.type());
 
 	return  norm(I, shouldBeIdentity) < 1e-6;
-
 }
 
 // Calculates rotation matrix to euler angles
@@ -544,7 +549,6 @@ bool isRotationMatrix(Mat &R)
 // of the euler angles ( x and z are swapped ).
 Vec3f rotationMatrixToEulerAngles(Mat &R)
 {
-
 	assert(isRotationMatrix(R));
 
 	float sy = sqrt(R.at<double>(0, 0) * R.at<double>(0, 0) + R.at<double>(1, 0) * R.at<double>(1, 0));
@@ -565,9 +569,6 @@ Vec3f rotationMatrixToEulerAngles(Mat &R)
 		z = 0;
 	}
 	return Vec3f(x, y, z);
-
-
-
 }
 
 int Sign(float x) {
@@ -577,3 +578,42 @@ int Sign(float x) {
 		return 1;
 }
 
+void initUI() {
+	button = Rect(0, 0, 100, 50);
+}
+
+void updateUI() {
+	// The canvas
+	canvas = Mat3b(finalImage.rows + button.height, finalImage.cols, Vec3b(0, 0, 0));
+
+	// Draw the button
+	canvas(button) = Vec3b(200, 200, 200);
+	putText(canvas(button), "Start", Point(button.width*0.35, button.height*0.7), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0));
+
+	putText(finalImage, "You won", Point(150, 150), FONT_HERSHEY_SIMPLEX, 2, Scalar(128), 2);
+
+	// Draw the image
+	finalImage.copyTo(canvas(Rect(0, button.height, finalImage.cols, finalImage.rows)));
+
+	// Setup callback function
+	setMouseCallback(streamWindowName, callBackFunc);
+}
+
+void callBackFunc(int event, int x, int y, int flags, void* userdata)
+{
+	if (event == EVENT_LBUTTONDOWN)
+	{
+		if (button.contains(Point(x, y)))
+		{
+			cout << "Clicked!" << endl;
+			rectangle(canvas(button), button, Scalar(0, 0, 255), 2);
+		}
+	}
+	if (event == EVENT_LBUTTONUP)
+	{
+		rectangle(canvas, button, Scalar(200, 200, 200), 2);
+	}
+
+	imshow(streamWindowName, canvas);
+	waitKey(1);
+}
