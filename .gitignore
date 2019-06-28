@@ -32,3 +32,4 @@ vs/
 *.exe
 *.out
 *.app
+.vs/
