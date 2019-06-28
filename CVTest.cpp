@@ -21,19 +21,36 @@ VideoCapture cap(0);
 
 vector<Vec4i> hierarchy;
 Mat frame, gray, finalImage;
-Mat apple;
+vector<Mat> puzzlePieces;
 int main(int, void*)
 {
 	if (!cap.isOpened()) {
 		cout << "No capture" << endl;
 		return -1;
 	}
-	apple = imread("apple.jpg", CV_LOAD_IMAGE_COLOR);
-	resize(apple, apple, Size(100, 100));
+	Mat apple = imread("apple.jpg", CV_LOAD_IMAGE_COLOR);
+	Mat pear = imread("pear.png", CV_LOAD_IMAGE_COLOR);
+	float pieceSize = 100;
+	resize(pear, pear, Size(pieceSize, pieceSize));
+	resize(apple, apple, Size(pieceSize, pieceSize));
+
+	if (!pear.data) {
+		cout << "Could not open pear.png" << endl;
+		return -1;
+	}
 	if (!apple.data) {
 		cout << "Could not open apple.jpg" << endl;
 		return -1;
 	}
+
+
+	for (int i = 0; i < 10; i++) { 
+		if (i % 2 == 0)
+			puzzlePieces.push_back(apple);
+		else
+			puzzlePieces.push_back(pear);
+	}
+
 	namedWindow(streamWindowName, CV_WINDOW_AUTOSIZE);
 	createTrackbar(trackbarName,
 		streamWindowName, &thresholdValue,
@@ -117,7 +134,6 @@ Mat calculateStrip(double dx, double dy, MyStrip& myStrip) {
 
 
 void CaptureLoop() {
-	flip(frame, frame, 1);
 	finalImage = frame.clone();
 	//Convert to greyscale
 	cvtColor(frame, gray, CV_BGR2GRAY);
@@ -131,14 +147,12 @@ void CaptureLoop() {
 	vector<vector<Point> > contours;
 	findContours(gray, contours,
 		RETR_LIST, CHAIN_APPROX_SIMPLE);
-	int appleX = 0, appleY = 0;
+
 	for (size_t i = 0; i < contours.size(); i++) {
 		//Approximate the contour as a polygon:
 		vector<Point> approx_contour;
 		approxPolyDP(contours[i], approx_contour, arcLength(contours[i], true) * 0.02, true);
 		Rect r = boundingRect(approx_contour);
-		appleX = r.x;
-		appleY = r.y;
 		//Test polygon:
 		if (approx_contour.size() != 4)
 			continue;
@@ -432,8 +446,8 @@ void CaptureLoop() {
 		}
 
 		// Print ID
-		printf("Found: %04x\n", code);
-
+		//printf("Found: %04x\n", code);
+		//cout << markerIds[code] << endl;
 		// Show the first detected marker in the image
 		if (isFirstMarker) {
 			imshow(markerWindowName, markerImage);
@@ -450,12 +464,12 @@ void CaptureLoop() {
 		float xDirection, yDirection;
 		xDirection = corners[0].x - corners[1].x;
 		yDirection = corners[0].y - corners[1].y;
-		cout << corners[0] - corners[1] << " ";
+		//cout << corners[0] - corners[1] << " ";
 		float normalizer = sqrtf(xDirection * xDirection + yDirection * yDirection);
 		float rotAngle = 0;
 		if (normalizer != 0) {
 			xDirection /= normalizer;
-			rotAngle = - Sign(yDirection) * acos(xDirection * 1) / 3.1415 * 180;
+			rotAngle = -Sign(yDirection) * acos(xDirection * 1) / 3.1415 * 180;
 			cout << rotAngle << endl;
 		}
 		else {
@@ -490,23 +504,10 @@ void CaptureLoop() {
 			}
 			//cout << endl;
 		}
-
-		
-
-		Point2f appleCenter((apple.cols - 1) / 2.0, (apple.rows - 1) / 2.0);
-		Mat rotationMatrix = getRotationMatrix2D(appleCenter, rotAngle, 1.0);
-		// determine bounding rectangle, center not relevant
-		Rect2f bbox = RotatedRect(Point2f(), apple.size(), rotAngle).boundingRect2f();
-		// adjust transformation matrix
-		rotationMatrix.at<double>(0, 2) += bbox.width / 2.0 - apple.cols / 2.0;
-		rotationMatrix.at<double>(1, 2) += bbox.height / 2.0 - apple.rows / 2.0;
-
-		cv::Mat rotatedApple;
-		cv::warpAffine(apple, rotatedApple, rotationMatrix, bbox.size());
-		if (centerXSum - rotatedApple.cols / 2 > 0 && centerXSum + rotatedApple.cols / 2 < finalImage.cols &&
-			centerYSum - rotatedApple.rows / 2 > 0 && centerYSum + rotatedApple.rows / 2 < finalImage.rows) {
-
-			rotatedApple.copyTo(finalImage(Rect(centerXSum - rotatedApple.cols / 2, centerYSum - rotatedApple.rows / 2, rotatedApple.cols, rotatedApple.rows)), rotatedApple != 0);
+		int puzzleIndex = markerIds[code] - 1;
+		cout << puzzleIndex << endl;
+		if (puzzleIndex >= 0 && puzzleIndex < puzzlePieces.size()) {
+			DrawPuzzlePiece(puzzlePieces[puzzleIndex], centerXSum, centerYSum, rotAngle);
 		}
 		// Copy the pixels from src to dst.
 	// Copy the pixels from src to dst.
@@ -527,49 +528,6 @@ void CaptureLoop() {
 
 }
 
-// Checks if a matrix is a valid rotation matrix.
-bool isRotationMatrix(Mat &R)
-{
-	Mat Rt;
-	transpose(R, Rt);
-	Mat shouldBeIdentity = Rt * R;
-	Mat I = Mat::eye(3, 3, shouldBeIdentity.type());
-
-	return  norm(I, shouldBeIdentity) < 1e-6;
-
-}
-
-// Calculates rotation matrix to euler angles
-// The result is the same as MATLAB except the order
-// of the euler angles ( x and z are swapped ).
-Vec3f rotationMatrixToEulerAngles(Mat &R)
-{
-
-	assert(isRotationMatrix(R));
-
-	float sy = sqrt(R.at<double>(0, 0) * R.at<double>(0, 0) + R.at<double>(1, 0) * R.at<double>(1, 0));
-
-	bool singular = sy < 1e-6; // If
-
-	float x, y, z;
-	if (!singular)
-	{
-		x = atan2(R.at<double>(2, 1), R.at<double>(2, 2));
-		y = atan2(-R.at<double>(2, 0), sy);
-		z = atan2(R.at<double>(1, 0), R.at<double>(0, 0));
-	}
-	else
-	{
-		x = atan2(-R.at<double>(1, 2), R.at<double>(1, 1));
-		y = atan2(-R.at<double>(2, 0), sy);
-		z = 0;
-	}
-	return Vec3f(x, y, z);
-
-
-
-}
-
 int Sign(float x) {
 	if (x < 0)
 		return -1;
@@ -577,3 +535,20 @@ int Sign(float x) {
 		return 1;
 }
 
+void DrawPuzzlePiece(Mat puzzlePiece, float xPos, float yPos, float rotAngle) {
+	Point2f center((puzzlePiece.cols - 1) / 2.0, (puzzlePiece.rows - 1) / 2.0);
+	Mat rotationMatrix = getRotationMatrix2D(center, rotAngle, 1.0);
+	// determine bounding rectangle, center not relevant
+	Rect2f bbox = RotatedRect(Point2f(), puzzlePiece.size(), rotAngle).boundingRect2f();
+	// adjust transformation matrix
+	rotationMatrix.at<double>(0, 2) += bbox.width / 2.0 - puzzlePiece.cols / 2.0;
+	rotationMatrix.at<double>(1, 2) += bbox.height / 2.0 - puzzlePiece.rows / 2.0;
+
+	cv::Mat rotatedPuzzlePiece;
+	cv::warpAffine(puzzlePiece, rotatedPuzzlePiece, rotationMatrix, bbox.size());
+	if (xPos - rotatedPuzzlePiece.cols / 2 > 0 && xPos + rotatedPuzzlePiece.cols / 2 < finalImage.cols &&
+		yPos - rotatedPuzzlePiece.rows / 2 > 0 && yPos + rotatedPuzzlePiece.rows / 2 < finalImage.rows) {
+
+		rotatedPuzzlePiece.copyTo(finalImage(Rect(xPos - rotatedPuzzlePiece.cols / 2, yPos - rotatedPuzzlePiece.rows / 2, rotatedPuzzlePiece.cols, rotatedPuzzlePiece.rows)), rotatedPuzzlePiece != 0);
+	}
+}

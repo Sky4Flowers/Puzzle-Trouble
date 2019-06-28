@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MarkerCodes.h"
 #include "PoseEstimation.h"
 #include <opencv2/opencv.hpp>
 #include <iostream>
@@ -20,6 +21,5 @@ void bw_trackbarHandler(int pos, void* slider_value);
 int subpixSampleSafe(const Mat& pSrc, const Point2f& p);
 Mat calculateStrip(double dx, double dy, MyStrip& myStrip);
 void CaptureLoop(); 
-bool isRotationMatrix(Mat &R);
-Vec3f rotationMatrixToEulerAngles(Mat &R);
 int Sign(float x);
+void DrawPuzzlePiece(Mat puzzlePiece, float xPos, float yPos, float rotAngle);
