@@ -22,6 +22,12 @@ VideoCapture cap(0);
 
 vector<Vec4i> hierarchy;
 Mat frame, gray, finalImage;
+
+RNG rng;
+const int numberOfPieces = 4;
+const double imageSize = 200;
+vector<vector<Point2f> > voronoiMasks;
+vector<Point2f> voronoiCenters;
 vector<Mat> puzzlePieces;
 
 //Variables for UI
@@ -34,36 +40,25 @@ int main(int, void*)
 		cout << "No capture" << endl;
 		return -1;
 	}
-	Mat apple = imread("apple.jpg", CV_LOAD_IMAGE_COLOR);
-	Mat pear = imread("pear.png", CV_LOAD_IMAGE_COLOR);
-	float pieceSize = 100;
-	resize(pear, pear, Size(pieceSize, pieceSize));
-	resize(apple, apple, Size(pieceSize, pieceSize));
 
-	if (!pear.data) {
-		cout << "Could not open pear.png" << endl;
-		return -1;
-	}
+	rng.state = time(NULL); //initialize RNG Seed
+	Mat apple = imread("apple.jpg", CV_LOAD_IMAGE_COLOR);
+	resize(apple, apple, Size(imageSize, imageSize));
+
 	if (!apple.data) {
 		cout << "Could not open apple.jpg" << endl;
 		return -1;
 	}
 
-
-	for (int i = 0; i < 10; i++) { 
-		if (i % 2 == 0)
-			puzzlePieces.push_back(apple);
-		else
-			puzzlePieces.push_back(pear);
-	}
+	CreatePuzzlePieces(apple); //slice up the image
 
 	namedWindow(streamWindowName, CV_WINDOW_AUTOSIZE);
-	createTrackbar(trackbarName,
+	/*createTrackbar(trackbarName,
 		streamWindowName, &thresholdValue,
 		thresholdMaxValue, on_trackbar, &thresholdValue);
 	createTrackbar(buttonName, streamWindowName, &adaptiveValue, 1, on_trackbar, &adaptiveValue);
 
-	createTrackbar("levels+3", streamWindowName, &levels, 7, on_trackbar, &levels);
+	createTrackbar("levels+3", streamWindowName, &levels, 7, on_trackbar, &levels);*/
 	namedWindow(markerWindowName, CV_WINDOW_NORMAL);
 	resizeWindow(markerWindowName, 120, 120);
 
@@ -536,31 +531,80 @@ void CaptureLoop() {
 	imshow(streamWindowName, finalImage);
 }
 
-int Sign(float x) {
-	if (x < 0)
-		return -1;
-	else
-		return 1;
-}
-
 void DrawPuzzlePiece(Mat puzzlePiece, float xPos, float yPos, float rotAngle) {
-	Point2f center((puzzlePiece.cols - 1) / 2.0, (puzzlePiece.rows - 1) / 2.0);
-	Mat rotationMatrix = getRotationMatrix2D(center, rotAngle, 1.0);
-	// determine bounding rectangle, center not relevant
-	Rect2f bbox = RotatedRect(Point2f(), puzzlePiece.size(), rotAngle).boundingRect2f();
-	// adjust transformation matrix
-	rotationMatrix.at<double>(0, 2) += bbox.width / 2.0 - puzzlePiece.cols / 2.0;
-	rotationMatrix.at<double>(1, 2) += bbox.height / 2.0 - puzzlePiece.rows / 2.0;
-
-	cv::Mat rotatedPuzzlePiece;
-	cv::warpAffine(puzzlePiece, rotatedPuzzlePiece, rotationMatrix, bbox.size());
+	Mat rotatedPuzzlePiece = RotateImage(puzzlePiece, rotAngle);
 	if (xPos - rotatedPuzzlePiece.cols / 2 > 0 && xPos + rotatedPuzzlePiece.cols / 2 < finalImage.cols &&
 		yPos - rotatedPuzzlePiece.rows / 2 > 0 && yPos + rotatedPuzzlePiece.rows / 2 < finalImage.rows) {
-
 		rotatedPuzzlePiece.copyTo(finalImage(Rect(xPos - rotatedPuzzlePiece.cols / 2, yPos - rotatedPuzzlePiece.rows / 2, rotatedPuzzlePiece.cols, rotatedPuzzlePiece.rows)), rotatedPuzzlePiece != 0);
 	}
 }
 
+
+//Param<size> determines size of to be sliced image
+//Result<voronoiMasks> vector< vector<Point2f> > = List of pointLists used for polygon of mask
+//Result<vornoiCenters> vector<Point2f> = List of centerpoints of polygons
+void VoronoiImageSlicing(const Size &size) {
+	vector<Point2f> points;
+	for (int i = 0; i < numberOfPieces; i++) {
+		points.push_back(Point2f(rng.uniform(0.0, imageSize), rng.uniform(0.0, imageSize)));
+	}
+	Rect rect(0, 0, size.width, size.height);
+	Subdiv2D subdiv(rect);
+	for each(Point2f point in points) {
+		subdiv.insert(point);
+	}
+	subdiv.getVoronoiFacetList(vector<int>(), voronoiMasks, voronoiCenters);
+}
+
+//Param<size> size of image
+//Param<pts> points of the polygon creating the mask
+//Return<mask> Mat of the mask
+Mat CreateMask(const Size &size, const vector<Point2f> &_pts) {
+	vector<Point> pts(_pts.size());
+	for (int i = 0; i < _pts.size(); i++) {
+		pts[i] = _pts[i];
+	}
+	const Point* elementPoints[1] = { &pts[0] };
+	int numPoints = (int)pts.size();
+	Mat mMask = Mat::zeros(size, CV_8U);
+	fillPoly(mMask, elementPoints, &numPoints, 1, Scalar(255));
+	return mMask;
+}
+
+//Creates the image slices from the voronoiMasks and puts them into the puzzlePieces List
+void CreatePuzzlePieces(Mat &img) {
+	Size imageSize = img.size();
+	VoronoiImageSlicing(imageSize);
+	for (int i = 0; i < numberOfPieces; i++) {
+		Mat dst;
+		Mat mask = CreateMask(img.size(), voronoiMasks[i]);
+		img.copyTo(dst, mask);
+		Point2f imageCenter = voronoiCenters[i];
+		dst = TranslateImage(dst, imageSize.width / 2 - imageCenter.x, imageSize.height / 2 - imageCenter.y); //Recenter image
+		dst = RotateImage(dst, rng.uniform(0.0, 360.0)); //Give image random rotation
+		puzzlePieces.push_back(dst);
+	}
+}
+
+Mat TranslateImage(Mat &img, int offsetx, int offsety) {
+	Mat trans_mat = (Mat_<double>(2, 3) << 1, 0, offsetx, 0, 1, offsety);
+	warpAffine(img, img, trans_mat, img.size());
+	return img;
+}
+
+Mat RotateImage(Mat &img, float rotAngle) {
+	Point2f center((img.cols - 1) / 2.0, (img.rows - 1) / 2.0);
+	Mat rotationMatrix = getRotationMatrix2D(center, rotAngle, 1.0);
+	// determine bounding rectangle, center not relevant
+	Rect2f bbox = RotatedRect(Point2f(), img.size(), rotAngle).boundingRect2f();
+	// adjust transformation matrix
+	rotationMatrix.at<double>(0, 2) += bbox.width / 2.0 - img.cols / 2.0;
+	rotationMatrix.at<double>(1, 2) += bbox.height / 2.0 - img.rows / 2.0;
+
+	cv::Mat rotatedImg;
+	cv::warpAffine(img, rotatedImg, rotationMatrix, bbox.size());
+	return rotatedImg;
+}
 void initUI() {
 	button = Rect(0, 0, 100, 50);
 }
@@ -599,4 +643,11 @@ void callBackFunc(int event, int x, int y, int flags, void* userdata)
 
 	imshow(streamWindowName, finalImage);
 	waitKey(1);
+}
+
+int Sign(float x) {
+	if (x < 0)
+		return -1;
+	else
+		return 1;
 }
