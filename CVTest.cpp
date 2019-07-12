@@ -35,8 +35,14 @@ double startWinTime;
 bool detectingWin;
 
 //Variables for UI
-//Mat3b canvas; // for displaying the button above the image (only blinking yet)
-Rect button;
+Rect startButton;
+Rect menuButton;
+Rect rerollButton;
+Rect quitButton;
+
+int levelCount = 1;
+Mat* levelImages;
+Rect* levelButtons;
 
 int main(int, void*)
 {
@@ -165,8 +171,8 @@ void CaptureLoop() {
 		if (r.height < 20 || r.width < 20 || r.width > finalImage.cols - 10 || r.height > finalImage.rows - 10) {
 			continue;
 		}
-		//Draw polygon if it survives test
-		polylines(finalImage, approx_contour, true, CV_RGB(255, 0, 0), 4);
+		//Draw polygon if it survives test //Debug output
+		//polylines(finalImage, approx_contour, true, CV_RGB(255, 0, 0), 4);
 
 		float lineParams[16];
 		Mat lineParamsMat(Size(4, 4), CV_32F, lineParams);
@@ -174,8 +180,8 @@ void CaptureLoop() {
 		//Draw 7 circles with equivalent distance on polygon lines => 7 intervalls
 		for (size_t j = 0; j < approx_contour.size(); j++) {
 
-			//First circle on position of polygon vertex
-			circle(finalImage, approx_contour[j], 3, CV_RGB(0, 255, 0), -1);
+			//First circle on position of polygon vertex //Debug output
+			//circle(finalImage, approx_contour[j], 3, CV_RGB(0, 255, 0), -1);
 			// calculate stepsize %4 because it is a rectangle; /7 because we want 7 circles
 			double dx = ((double)approx_contour[(j + 1) % 4].x - (double)approx_contour[j].x) / 7.0;
 			double dy = ((double)approx_contour[(j + 1) % 4].y - (double)approx_contour[j].y) / 7.0;
@@ -192,7 +198,8 @@ void CaptureLoop() {
 				Point p;
 				p.x = (int)px;
 				p.y = (int)py;
-				circle(finalImage, p, 2, CV_RGB(0, 0, 255), -1);
+				//Debug output
+				//circle(finalImage, p, 2, CV_RGB(0, 0, 255), -1);
 
 				//add stripes for each circle
 				// Columns: Loop over 3 pixels
@@ -210,7 +217,8 @@ void CaptureLoop() {
 						p2.x = (int)subPixel.x;
 						p2.y = (int)subPixel.y;
 
-						circle(finalImage, p2, 1, CV_RGB(0, 255, 255), -1);
+						//Debug output
+						//circle(finalImage, p2, 1, CV_RGB(0, 255, 255), -1);
 
 						// Combined Intensity of the subpixel
 						int pixelIntensity = subpixSampleSafe(gray, subPixel);
@@ -298,7 +306,8 @@ void CaptureLoop() {
 				edgeCenter.y = (double)p.y + (((double)maxIndexShift + pos) * strip.stripVecY.y);
 
 				// Highlight the subpixel with blue color
-				circle(finalImage, edgeCenter, 2, CV_RGB(0, 0, 255), -1);
+				//Debug output
+				//circle(finalImage, edgeCenter, 2, CV_RGB(0, 0, 255), -1);
 				edgePointCenters[k - 1].x = edgeCenter.x;
 				edgePointCenters[k - 1].y = edgeCenter.y;
 			}//End of approxContour point loop
@@ -313,7 +322,8 @@ void CaptureLoop() {
 			p2.x = (int)lineParams[8 + j] + (int)(50.0 * lineParams[j]);
 			p2.y = (int)lineParams[12 + j] + (int)(50.0 * lineParams[4 + j]);
 
-			line(finalImage, p1, p2, CV_RGB(0, 255, 255), 1, 8, 0);
+			//Debug output
+			//line(finalImage, p1, p2, CV_RGB(0, 255, 255), 1, 8, 0);
 		}//end of circles
 
 		float centerXSum = 0, centerYSum = 0;
@@ -363,7 +373,8 @@ void CaptureLoop() {
 			p.x = (int)corners[i].x;
 			p.y = (int)corners[i].y;
 
-			circle(finalImage, p, 5, CV_RGB(255, 255, 0), -1);
+			//Debug output
+			//circle(finalImage, p, 5, CV_RGB(255, 255, 0), -1);
 		}
 
 		//Marker Identification:
@@ -565,7 +576,6 @@ void DrawPuzzlePiece(Mat puzzlePiece, float xPos, float yPos, float rotAngle) {
 	}
 }
 
-
 //Param<size> determines size of to be sliced image
 //Result<voronoiMasks> vector< vector<Point2f> > = List of pointLists used for polygon of mask
 //Result<vornoiCenters> vector<Point2f> = List of centerpoints of polygons
@@ -678,7 +688,19 @@ Mat RotateImage(Mat &img, float rotAngle) {
 	return rotatedImg;
 }
 void initUI() {
-	button = Rect(0, 0, 100, 50);
+	startButton = Rect(0, 0, 100, 50);
+	menuButton = Rect(0, 50, 100, 50);
+	rerollButton = Rect(0, 100, 100, 50);
+	quitButton = Rect(0, 150, 100, 50);
+
+	levelImages = new Mat[levelCount];
+	levelButtons = new Rect[levelCount];
+
+	levelImages[0] = imread("apple.jpg", CV_LOAD_IMAGE_COLOR);
+	levelButtons[0] = Rect(0, 100, 100, 50);
+
+	// Setup callback function
+	setMouseCallback(streamWindowName, callBackFunc);
 }
 
 void updateUI() {
@@ -686,16 +708,32 @@ void updateUI() {
 	//canvas = Mat3b(finalImage.rows + button.height, finalImage.cols, Vec3b(0, 0, 0));
 
 	// Draw the button
-	finalImage(button) = Vec3b(200, 200, 200);
-	putText(finalImage(button), "Start", Point(button.width*0.35, button.height*0.7), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0));
+	//finalImage(startButton) = Vec3b(200, 200, 200);
+	//putText(finalImage(startButton), "Start", Point(startButton.width*0.35, startButton.height*0.7), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0));
+	drawButton(finalImage, startButton, -1, Vec3b(200, 200, 200), "Start");
+	drawButton(finalImage, menuButton, -1, Vec3b(200, 200, 200), "Menu");
+	drawButton(finalImage, rerollButton, -1, Vec3b(200, 200, 200), "Reroll");
+	drawButton(finalImage, quitButton, -1, Vec3b(200, 200, 200), "Quit");
+
+	for (int i = 0; i < levelCount; i++) {
+		drawButton(finalImage, levelButtons[i], i, Vec3b(200, 200, 200), "Level " + i);
+	}
 
 	putText(finalImage, "You won", Point(150, 150), FONT_HERSHEY_SIMPLEX, 2, Scalar(128), 2);
+}
 
-	// Draw the image
-	//finalImage.copyTo(canvas(Rect(0, button.height, finalImage.cols, finalImage.rows)));
+void drawButton(Mat &display, Rect &button, int textureIndex, Vec3b &color, String buttonText) {
+	display(button) = color;
 
-	// Setup callback function
-	setMouseCallback(streamWindowName, callBackFunc);
+	if (textureIndex != -1) {
+		Mat texture = levelImages[textureIndex];//imread("apple.jpg", CV_LOAD_IMAGE_COLOR);
+		resize(texture, texture, Size(button.width, button.height));
+		texture.copyTo(display(button));
+	}
+
+	if (!buttonText.empty()) {
+		putText(display(button), buttonText, Point(button.width*0.35, button.height*0.7), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0));
+	}
 }
 void drawGameRectangle() {
 	Point2f point1 = Point2f(imageSize / 2, imageSize / 2), point2 = Point2f(imageSize / 2, finalImage.rows - imageSize / 2),
@@ -718,15 +756,15 @@ void callBackFunc(int event, int x, int y, int flags, void* userdata)
 {
 	if (event == EVENT_LBUTTONDOWN)
 	{
-		if (button.contains(Point(x, y)))
+		if (startButton.contains(Point(x, y)))
 		{
 			cout << "Clicked!" << endl;
-			rectangle(finalImage(button), button, Scalar(0, 0, 255), 2);
+			rectangle(finalImage(startButton), startButton, Scalar(0, 0, 255), 2);
 		}
 	}
 	if (event == EVENT_LBUTTONUP)
 	{
-		rectangle(finalImage, button, Scalar(200, 200, 200), 2);
+		rectangle(finalImage, startButton, Scalar(200, 200, 200), 2);
 	}
 
 	imshow(streamWindowName, finalImage);

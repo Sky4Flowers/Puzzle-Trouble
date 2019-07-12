@@ -30,5 +30,6 @@ bool TestEndConfiguration(const std::map<int, Point2f> &endconfig);
 void initUI();
 void updateUI();
 void drawGameRectangle();
+void drawButton(Mat &display, Rect &button, int textureIndex, Vec3b &position, String buttonText);
 void callBackFunc(int event, int x, int y, int flags, void* userdata);
 int Sign(float x);
