@@ -17,7 +17,7 @@ char* buttonName = "Normal: 0\n Adaptive: 1";
 char* trackbarWindowName = "TrackbarWindow";
 
 bool isFirstMarker = true;
-
+bool couldNotLoadImage = false;
 VideoCapture cap(0);
 
 vector<Vec4i> hierarchy;
@@ -51,26 +51,16 @@ int main(int, void*)
 		return -1;
 	}
 
-	rng.state = time(NULL); //initialize RNG Seed
-	Mat apple = imread("apple.jpg", CV_LOAD_IMAGE_COLOR);
-	resize(apple, apple, Size(imageSize, imageSize));
-
-	if (!apple.data) {
-		cout << "Could not open apple.jpg" << endl;
-		return -1;
-	}
-
-	CreatePuzzlePieces(apple); //slice up the image
-
-	namedWindow(streamWindowName, CV_WINDOW_AUTOSIZE);
+	createPuzzle("apple");
+	namedWindow(streamWindowName, CV_WINDOW_FULLSCREEN);
 	/*createTrackbar(trackbarName,
 		streamWindowName, &thresholdValue,
 		thresholdMaxValue, on_trackbar, &thresholdValue);
 	createTrackbar(buttonName, streamWindowName, &adaptiveValue, 1, on_trackbar, &adaptiveValue);
 
 	createTrackbar("levels+3", streamWindowName, &levels, 7, on_trackbar, &levels);*/
-	namedWindow(markerWindowName, CV_WINDOW_NORMAL);
-	resizeWindow(markerWindowName, 120, 120);
+	//namedWindow(markerWindowName, CV_WINDOW_NORMAL);
+	//resizeWindow(markerWindowName, 120, 120);
 
 	initUI();
 
@@ -78,9 +68,12 @@ int main(int, void*)
 		CaptureLoop();
 		if (waitKey(1) == 27)
 			break;
+		if (couldNotLoadImage) {
+			return -1;
+		}
 	}
 	destroyWindow(streamWindowName);
-	destroyWindow(markerWindowName);
+	//destroyWindow(markerWindowName);
 	return 0;
 }
 
@@ -467,7 +460,7 @@ void CaptureLoop() {
 		//cout << markerIds[code] << endl;
 		// Show the first detected marker in the image
 		if (isFirstMarker) {
-			imshow(markerWindowName, markerImage);
+			//imshow(markerWindowName, markerImage);
 			isFirstMarker = false;
 		}
 
@@ -686,6 +679,21 @@ Mat RotateImage(Mat &img, float rotAngle) {
 	cv::Mat rotatedImg;
 	cv::warpAffine(img, rotatedImg, rotationMatrix, bbox.size());
 	return rotatedImg;
+}
+
+void createPuzzle(string puzzleName) {
+	rng.state = time(NULL); //initialize RNG Seed
+	Mat apple = imread(puzzleName + ".jpg", CV_LOAD_IMAGE_COLOR);
+
+	if (!apple.data) {
+		cout << "Could not open " + puzzleName + ".jpg" << endl;
+		couldNotLoadImage = true;
+		return;
+	}
+
+	resize(apple, apple, Size(imageSize, imageSize));
+
+	CreatePuzzlePieces(apple); //slice up the image
 }
 void initUI() {
 	startButton = Rect(0, 0, 100, 50);

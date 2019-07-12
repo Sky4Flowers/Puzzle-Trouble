@@ -27,6 +27,7 @@ void DrawPuzzlePiece(Mat puzzlePiece, float xPos, float yPos, float rotAngle);
 Mat TranslateImage(Mat &img, int offsetx, int offsety);
 Mat RotateImage(Mat &img, float rotAngle);
 bool TestEndConfiguration(const std::map<int, Point2f> &endconfig);
+void createPuzzle(string puzzleName);
 void initUI();
 void updateUI();
 void drawGameRectangle();
