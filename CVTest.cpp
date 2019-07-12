@@ -29,6 +29,10 @@ const double imageSize = 200;
 vector<vector<Point2f> > voronoiMasks;
 vector<Point2f> voronoiCenters;
 vector<Mat> puzzlePieces;
+const double distanceThreshold = 10.0;
+const double winRecognitionDuration = 3.0;
+double startWinTime;
+bool detectingWin;
 
 //Variables for UI
 Rect startButton;
@@ -156,7 +160,7 @@ void CaptureLoop() {
 	vector<vector<Point> > contours;
 	findContours(gray, contours,
 		RETR_LIST, CHAIN_APPROX_SIMPLE);
-
+	std::map<int, Point2f> endConfiguration;
 	for (size_t i = 0; i < contours.size(); i++) {
 		//Approximate the contour as a polygon:
 		vector<Point> approx_contour;
@@ -484,7 +488,7 @@ void CaptureLoop() {
 		if (normalizer != 0) {
 			xDirection /= normalizer;
 			rotAngle = -Sign(yDirection) * acos(xDirection * 1) / 3.1415 * 180;
-			cout << rotAngle << endl;
+			//cout << rotAngle << endl;
 		}
 		else {
 			cout << "normalizer = 0 - " << xDirection << endl;
@@ -519,8 +523,9 @@ void CaptureLoop() {
 			//cout << endl;
 		}
 		int puzzleIndex = markerIds[code] - 1;
-		cout << puzzleIndex << endl;
+		//cout << puzzleIndex << endl;
 		if (puzzleIndex >= 0 && puzzleIndex < puzzlePieces.size()) {
+			endConfiguration[puzzleIndex] = Point2f(centerXSum, centerYSum);
 			DrawPuzzlePiece(puzzlePieces[puzzleIndex], centerXSum, centerYSum, rotAngle);
 		}
 		// Copy the pixels from src to dst.
@@ -536,12 +541,30 @@ void CaptureLoop() {
 
 	}//End of contour loop
 
+	if (endConfiguration.size() == numberOfPieces && TestEndConfiguration(endConfiguration)) {
+		if (detectingWin) {
+			cout << time(NULL) << " - " << startWinTime << endl;
+			if (time(NULL) - startWinTime < winRecognitionDuration) {
+				cout << "You Win" << endl;
+			}
+		}
+		else {
+			detectingWin = true;
+			startWinTime = time(NULL);
+		}
+	}
+	else {
+		detectingWin = false;
+	}
+
 	//Add UI
 	updateUI();
-
+	drawGameRectangle();
 	isFirstMarker = true;
 	imshow(streamWindowName, finalImage);
 }
+
+
 
 void DrawPuzzlePiece(Mat puzzlePiece, float xPos, float yPos, float rotAngle) {
 	Mat rotatedPuzzlePiece = RotateImage(puzzlePiece, rotAngle);
@@ -549,22 +572,46 @@ void DrawPuzzlePiece(Mat puzzlePiece, float xPos, float yPos, float rotAngle) {
 		yPos - rotatedPuzzlePiece.rows / 2 > 0 && yPos + rotatedPuzzlePiece.rows / 2 < finalImage.rows) {
 		rotatedPuzzlePiece.copyTo(finalImage(Rect(xPos - rotatedPuzzlePiece.cols / 2, yPos - rotatedPuzzlePiece.rows / 2, rotatedPuzzlePiece.cols, rotatedPuzzlePiece.rows)), rotatedPuzzlePiece != 0);
 	}
+	else {
+		cout << "PuzzlePiece outside of frame" << endl;
+	}
 }
 
 //Param<size> determines size of to be sliced image
 //Result<voronoiMasks> vector< vector<Point2f> > = List of pointLists used for polygon of mask
 //Result<vornoiCenters> vector<Point2f> = List of centerpoints of polygons
 void VoronoiImageSlicing(const Size &size) {
-	vector<Point2f> points;
-	for (int i = 0; i < numberOfPieces; i++) {
-		points.push_back(Point2f(rng.uniform(0.0, imageSize), rng.uniform(0.0, imageSize)));
+	int maxTries = 30;
+	int currentTry = 0;
+	bool tryAgain = true;
+	while (currentTry < maxTries && tryAgain) {
+		voronoiMasks.clear();
+		voronoiCenters.clear();
+		tryAgain = false;
+		vector<Point2f> points;
+		for (int i = 0; i < numberOfPieces; i++) {
+			points.push_back(Point2f(rng.uniform(0.0, imageSize), rng.uniform(0.0, imageSize)));
+		}
+		Rect rect(0, 0, size.width, size.height);
+		Subdiv2D subdiv(rect);
+		for each(Point2f point in points) {
+			subdiv.insert(point);
+		}
+		subdiv.getVoronoiFacetList(vector<int>(), voronoiMasks, voronoiCenters);
+
+		for (int i = 0; i < numberOfPieces; i++) {
+			for (int j = 0; j < numberOfPieces; j++) {
+				if (i != j) {
+					Point2f targetVector = voronoiCenters[i] - voronoiCenters[j];
+					double targetDistance = sqrtf(targetVector.x * targetVector.x + targetVector.y * targetVector.y);
+					if (targetDistance < 50) {
+						tryAgain = true;
+					}
+				}
+			}
+		}
+		currentTry++;
 	}
-	Rect rect(0, 0, size.width, size.height);
-	Subdiv2D subdiv(rect);
-	for each(Point2f point in points) {
-		subdiv.insert(point);
-	}
-	subdiv.getVoronoiFacetList(vector<int>(), voronoiMasks, voronoiCenters);
 }
 
 //Param<size> size of image
@@ -592,9 +639,34 @@ void CreatePuzzlePieces(Mat &img) {
 		img.copyTo(dst, mask);
 		Point2f imageCenter = voronoiCenters[i];
 		dst = TranslateImage(dst, imageSize.width / 2 - imageCenter.x, imageSize.height / 2 - imageCenter.y); //Recenter image
-		dst = RotateImage(dst, rng.uniform(0.0, 360.0)); //Give image random rotation
+		//dst = RotateImage(dst, rng.uniform(0.0, 360.0)); //Give image random rotation
 		puzzlePieces.push_back(dst);
 	}
+}
+
+bool TestEndConfiguration(const std::map<int, Point2f> &endconfig) {
+	int counter = 0;
+	double directionDiffSum = 0;
+	double distanceDiffSum = 0;
+	double rotationDiffSum = 0;
+	for (int i = 0; i < numberOfPieces; i++) {
+		for (int j = 0; j < numberOfPieces; j++) {
+			if (i != j) {
+				Point2f liveVector = endconfig.find(i)->second - endconfig.find(j)->second;
+				double liveDistance = sqrtf(liveVector.x * liveVector.x + liveVector.y * liveVector.y);
+				liveVector = liveVector / liveDistance;
+				Point2f targetVector = voronoiCenters[i] - voronoiCenters[j];
+				double targetDistance = sqrtf(targetVector.x * targetVector.x + targetVector.y * targetVector.y);
+				targetVector = targetVector / targetDistance;
+				directionDiffSum += acosf(targetVector.x * liveVector.x + targetVector.y * liveVector.y) * 180.0 / 3.14159265;
+				distanceDiffSum += abs(liveDistance - targetDistance);
+				counter++;
+			}
+		}
+	}
+	//cout << "Avg Similarity = " << (directionDiffSum / counter) << endl;
+	cout << "Avg Distance = " << (distanceDiffSum / counter) << endl;
+	return (distanceDiffSum / counter) < distanceThreshold;
 }
 
 Mat TranslateImage(Mat &img, int offsetx, int offsety) {
@@ -673,6 +745,22 @@ void drawButton(Mat &display, Rect &button, int textureIndex, Vec3b &color, Stri
 	if (!buttonText.empty()) {
 		putText(display(button), buttonText, Point(button.width*0.35, button.height*0.7), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0));
 	}
+}
+void drawGameRectangle() {
+	Point2f point1 = Point2f(imageSize / 2, imageSize / 2), point2 = Point2f(imageSize / 2, finalImage.rows - imageSize / 2),
+		point3 = Point2f(finalImage.cols - imageSize / 2, finalImage.rows - imageSize / 2), point4 = Point2f(finalImage.cols - imageSize / 2, imageSize / 2);
+	vector<Point2f> points;
+	points.push_back(point1);
+	points.push_back(point2);
+	points.push_back(point3);
+	points.push_back(point4);
+	line(finalImage, point1, point2, Scalar(255));
+
+	line(finalImage, point2, point3, Scalar(255));
+
+	line(finalImage, point3, point4, Scalar(255));
+
+	line(finalImage, point4, point1, Scalar(255));
 }
 
 void callBackFunc(int event, int x, int y, int flags, void* userdata)
