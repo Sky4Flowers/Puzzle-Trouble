@@ -28,5 +28,6 @@ Mat TranslateImage(Mat &img, int offsetx, int offsety);
 Mat RotateImage(Mat &img, float rotAngle);
 void initUI();
 void updateUI();
+void drawButton(Mat &display, Rect &button, int textureIndex, Vec3b &position, String buttonText);
 void callBackFunc(int event, int x, int y, int flags, void* userdata);
 int Sign(float x);
