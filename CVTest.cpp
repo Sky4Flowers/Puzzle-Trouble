@@ -44,6 +44,9 @@ int levelCount = 1;
 Mat* levelImages;
 Rect* levelButtons;
 
+//enum controls state of game loop
+enum State { main_menu, level_select, playing, win, quit };
+
 int main(int, void*)
 {
 	if (!cap.isOpened()) {
@@ -74,7 +77,40 @@ int main(int, void*)
 
 	initUI();
 
+	//State state = main_menu;//removed tmp
+
+	while (state == main_menu) {
+		//set gui for the main menu
+		//stuff before the level select button is pressed
+		if (true) //when the level select button is pressed
+			state = level_select;
+		while (state == level_select) {
+			//set gui for level selection
+			//once a level has been selected, change the image matrix to the selected image
+			if (true)//once the back button has been pressed
+				state = main_menu;
+		}
+
+		//begin a game
+		if (true) //play button pressed
+			state = playing;
+		while (state == playing) {
+			//set up
+			//game logic here
+			//game is won
+			if (true) //win condition here
+				state = win;
+			while (state == win) {
+				//freeze frame / other post win logic here
+				//back button is pushed
+				if(true) //button is pushed
+					state = main_menu;
+			}
+		}
+	}
+
 	while (cap.read(frame)) {
+		//when the state is set to game
 		CaptureLoop();
 		if (waitKey(1) == 27)
 			break;
