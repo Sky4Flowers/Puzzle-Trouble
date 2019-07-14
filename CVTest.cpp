@@ -818,18 +818,22 @@ void callBackFunc(int event, int x, int y, int flags, void* userdata)
 		{
 			cout << "Start Clicked!" << endl;
 			rectangle(finalImage(startButton), startButton, Scalar(0, 0, 255), 2);
+			state = playing;
 		}
 		else if (levelButton.contains(point)) {
 			rectangle(finalImage(levelButton), levelButton, Scalar(0, 0, 255), 2);
+			state = level_select;
 		}
 		else if (menuButton.contains(point)) {
 			rectangle(finalImage(menuButton), menuButton, Scalar(0, 0, 255), 2);
+			state = main_menu;
 		}
 		else if (rerollButton.contains(point)) {
 			rectangle(finalImage(rerollButton), rerollButton, Scalar(0, 0, 255), 2);
 		}
 		else if (quitButton.contains(point)) {
 			rectangle(finalImage(quitButton), quitButton, Scalar(0, 0, 255), 2);
+			state = quit;
 		}
 	}
 	if (event == EVENT_LBUTTONUP)
