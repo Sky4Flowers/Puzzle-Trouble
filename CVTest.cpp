@@ -17,7 +17,7 @@ char* buttonName = "Normal: 0\n Adaptive: 1";
 char* trackbarWindowName = "TrackbarWindow";
 
 bool isFirstMarker = true;
-
+bool couldNotLoadImage = false;
 VideoCapture cap(0);
 
 vector<Vec4i> hierarchy;
@@ -36,6 +36,7 @@ bool detectingWin;
 
 //Variables for UI
 Rect startButton;
+Rect levelButton;
 Rect menuButton;
 Rect rerollButton;
 Rect quitButton;
@@ -56,26 +57,16 @@ int main(int, void*)
 		return -1;
 	}
 
-	rng.state = time(NULL); //initialize RNG Seed
-	Mat apple = imread("apple.jpg", CV_LOAD_IMAGE_COLOR);
-	resize(apple, apple, Size(imageSize, imageSize));
-
-	if (!apple.data) {
-		cout << "Could not open apple.jpg" << endl;
-		return -1;
-	}
-
-	CreatePuzzlePieces(apple); //slice up the image
-
-	namedWindow(streamWindowName, CV_WINDOW_AUTOSIZE);
+	createPuzzle("apple");
+	namedWindow(streamWindowName, CV_WINDOW_FULLSCREEN);
 	/*createTrackbar(trackbarName,
 		streamWindowName, &thresholdValue,
 		thresholdMaxValue, on_trackbar, &thresholdValue);
 	createTrackbar(buttonName, streamWindowName, &adaptiveValue, 1, on_trackbar, &adaptiveValue);
 
 	createTrackbar("levels+3", streamWindowName, &levels, 7, on_trackbar, &levels);*/
-	namedWindow(markerWindowName, CV_WINDOW_NORMAL);
-	resizeWindow(markerWindowName, 120, 120);
+	//namedWindow(markerWindowName, CV_WINDOW_NORMAL);
+	//resizeWindow(markerWindowName, 120, 120);
 
 	initUI();
 
@@ -115,9 +106,12 @@ int main(int, void*)
 		
 		if (waitKey(1) == 27)
 			break;
+		if (couldNotLoadImage) {
+			return -1;
+		}
 	}
 	destroyWindow(streamWindowName);
-	destroyWindow(markerWindowName);
+	//destroyWindow(markerWindowName);
 	return 0;
 }
 
@@ -504,7 +498,7 @@ void CaptureLoop() {
 		//cout << markerIds[code] << endl;
 		// Show the first detected marker in the image
 		if (isFirstMarker) {
-			imshow(markerWindowName, markerImage);
+			//imshow(markerWindowName, markerImage);
 			isFirstMarker = false;
 		}
 
@@ -725,16 +719,40 @@ Mat RotateImage(Mat &img, float rotAngle) {
 	cv::warpAffine(img, rotatedImg, rotationMatrix, bbox.size());
 	return rotatedImg;
 }
+
+void createPuzzle(string puzzleName) {
+	rng.state = time(NULL); //initialize RNG Seed
+	Mat apple = imread(puzzleName + ".jpg", CV_LOAD_IMAGE_COLOR);
+
+	if (!apple.data) {
+		cout << "Could not open " + puzzleName + ".jpg" << endl;
+		couldNotLoadImage = true;
+		return;
+	}
+
+	resize(apple, apple, Size(imageSize, imageSize));
+
+	CreatePuzzlePieces(apple); //slice up the image
+}
 void initUI() {
 	startButton = Rect(0, 0, 100, 50);
-	menuButton = Rect(0, 50, 100, 50);
-	rerollButton = Rect(0, 100, 100, 50);
-	quitButton = Rect(0, 150, 100, 50);
+	levelButton = Rect(0, 50, 100, 50);
+	menuButton = Rect(0, 100, 100, 50);
+	rerollButton = Rect(0, 150, 100, 50);
+	quitButton = Rect(0, 200, 100, 50);
 
-	levelImages = new Mat[levelCount];
 	levelButtons = new Rect[levelCount];
+	levelImages = new Mat[levelCount + 7];
 
 	levelImages[0] = imread("apple.jpg", CV_LOAD_IMAGE_COLOR);
+	levelImages[1] = imread("Button_Play.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[2] = imread("Button_Levels.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[3] = imread("Button_Left_Arrow.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[4] = imread("Quit_Button.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[5] = imread("Button_Empty.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[6] = imread("Title.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[7] = imread("WinTitle.png", CV_LOAD_IMAGE_COLOR);
+
 	levelButtons[0] = Rect(0, 100, 100, 50);
 
 	// Setup callback function
@@ -748,13 +766,14 @@ void updateUI() {
 	// Draw the button
 	//finalImage(startButton) = Vec3b(200, 200, 200);
 	//putText(finalImage(startButton), "Start", Point(startButton.width*0.35, startButton.height*0.7), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0));
-	drawButton(finalImage, startButton, -1, Vec3b(200, 200, 200), "Start");
-	drawButton(finalImage, menuButton, -1, Vec3b(200, 200, 200), "Menu");
-	drawButton(finalImage, rerollButton, -1, Vec3b(200, 200, 200), "Reroll");
-	drawButton(finalImage, quitButton, -1, Vec3b(200, 200, 200), "Quit");
+	drawButton(finalImage, startButton, levelCount, Vec3b(200, 200, 200), "");
+	drawButton(finalImage, levelButton, levelCount + 1, Vec3b(200, 200, 200), "");
+	drawButton(finalImage, menuButton, levelCount + 2, Vec3b(200, 200, 200), "");
+	drawButton(finalImage, rerollButton, levelCount + 3, Vec3b(200, 200, 200), "");
+	drawButton(finalImage, quitButton, levelCount + 4, Vec3b(200, 200, 200), "");
 
 	for (int i = 0; i < levelCount; i++) {
-		drawButton(finalImage, levelButtons[i], i, Vec3b(200, 200, 200), "Level " + i);
+		//drawButton(finalImage, levelButtons[i], i, Vec3b(200, 200, 200), "Level " + i);
 	}
 
 	putText(finalImage, "You won", Point(150, 150), FONT_HERSHEY_SIMPLEX, 2, Scalar(128), 2);
@@ -764,7 +783,7 @@ void drawButton(Mat &display, Rect &button, int textureIndex, Vec3b &color, Stri
 	display(button) = color;
 
 	if (textureIndex != -1) {
-		Mat texture = levelImages[textureIndex];//imread("apple.jpg", CV_LOAD_IMAGE_COLOR);
+		Mat texture = levelImages[textureIndex];
 		resize(texture, texture, Size(button.width, button.height));
 		texture.copyTo(display(button));
 	}
@@ -794,15 +813,28 @@ void callBackFunc(int event, int x, int y, int flags, void* userdata)
 {
 	if (event == EVENT_LBUTTONDOWN)
 	{
-		if (startButton.contains(Point(x, y)))
+		Point point = Point(x, y);
+		if (startButton.contains(point))
 		{
-			cout << "Clicked!" << endl;
+			cout << "Start Clicked!" << endl;
 			rectangle(finalImage(startButton), startButton, Scalar(0, 0, 255), 2);
+		}
+		else if (levelButton.contains(point)) {
+			rectangle(finalImage(levelButton), levelButton, Scalar(0, 0, 255), 2);
+		}
+		else if (menuButton.contains(point)) {
+			rectangle(finalImage(menuButton), menuButton, Scalar(0, 0, 255), 2);
+		}
+		else if (rerollButton.contains(point)) {
+			rectangle(finalImage(rerollButton), rerollButton, Scalar(0, 0, 255), 2);
+		}
+		else if (quitButton.contains(point)) {
+			rectangle(finalImage(quitButton), quitButton, Scalar(0, 0, 255), 2);
 		}
 	}
 	if (event == EVENT_LBUTTONUP)
 	{
-		rectangle(finalImage, startButton, Scalar(200, 200, 200), 2);
+		//rectangle(finalImage, startButton, Scalar(200, 200, 200), 2);
 	}
 
 	imshow(streamWindowName, finalImage);
