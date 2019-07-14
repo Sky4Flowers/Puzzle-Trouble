@@ -50,6 +50,9 @@ enum State { main_menu, level_select, playing, win, quit };
 
 State state = main_menu;
 
+//freezed image
+Mat freezed;
+
 int main(int, void*)
 {
 	if (!cap.isOpened()) {
@@ -72,9 +75,10 @@ int main(int, void*)
 
 	while (state == main_menu) {
 		//set gui for the main menu
+		drawButton(finalImage, startButton, levelCount, Vec3b(200, 200, 200), "");
+		drawButton(finalImage, levelButton, levelCount + 1, Vec3b(200, 200, 200), "");
+		drawButton(finalImage, quitButton, levelCount + 4, Vec3b(200, 200, 200), "");
 		//stuff before the level select button is pressed
-		if (true) //when the level select button is pressed
-			state = level_select;
 		while (state == level_select) {
 			//set gui for level selection
 			//once a level has been selected, change the image matrix to the selected image
@@ -83,20 +87,18 @@ int main(int, void*)
 		}
 
 		//begin a game
-		if (true) //play button pressed
-			state = playing;
 		while (state == playing) {
 			//set up
+			drawButton(finalImage, rerollButton, levelCount + 3, Vec3b(200, 200, 200), "");
+			drawButton(finalImage, menuButton, levelCount + 2, Vec3b(200, 200, 200), "");
 			//game logic here
 			CaptureLoop();
 			//game is won
-			if (true) //win condition here
-				state = win;
 			while (state == win) {
 				//freeze frame / other post win logic here
-				//back button is pushed
-				if(true) //button is pushed
-					state = main_menu;
+				imshow(streamWindowName, freezed);
+				drawButton(finalImage, menuButton, levelCount + 2, Vec3b(200, 200, 200), "");
+				//still need to draw the you win title
 			}
 		}
 	}
@@ -577,6 +579,8 @@ void CaptureLoop() {
 			if (time(NULL) - startWinTime < winRecognitionDuration) {
 				cout << "You Win" << endl;
 				state = win; //change the game state to win
+				//freeze image
+				freezedImg = finalImage;
 			}
 		}
 		else {
@@ -589,7 +593,7 @@ void CaptureLoop() {
 	}
 
 	//Add UI
-	updateUI();
+	//updateUI(); //removed since not all ui elements should be called in all states
 	drawGameRectangle();
 	isFirstMarker = true;
 	imshow(streamWindowName, finalImage);
@@ -814,24 +818,24 @@ void callBackFunc(int event, int x, int y, int flags, void* userdata)
 	if (event == EVENT_LBUTTONDOWN)
 	{
 		Point point = Point(x, y);
-		if (startButton.contains(point))
+		if (startButton.contains(point) && state == main_menu)
 		{
 			cout << "Start Clicked!" << endl;
 			rectangle(finalImage(startButton), startButton, Scalar(0, 0, 255), 2);
 			state = playing;
 		}
-		else if (levelButton.contains(point)) {
+		else if (levelButton.contains(point) && state == main_menu) {
 			rectangle(finalImage(levelButton), levelButton, Scalar(0, 0, 255), 2);
 			state = level_select;
 		}
-		else if (menuButton.contains(point)) {
+		else if (menuButton.contains(point) && (state == playing || state == level_select || state == win)) {
 			rectangle(finalImage(menuButton), menuButton, Scalar(0, 0, 255), 2);
 			state = main_menu;
 		}
-		else if (rerollButton.contains(point)) {
+		else if (rerollButton.contains(point) && state == playing) {
 			rectangle(finalImage(rerollButton), rerollButton, Scalar(0, 0, 255), 2);
 		}
-		else if (quitButton.contains(point)) {
+		else if (quitButton.contains(point) && state == main_menu) {
 			rectangle(finalImage(quitButton), quitButton, Scalar(0, 0, 255), 2);
 			state = quit;
 		}
