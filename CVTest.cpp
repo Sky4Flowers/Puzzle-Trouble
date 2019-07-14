@@ -47,6 +47,8 @@ Rect* levelButtons;
 //enum controls state of game loop
 enum State { main_menu, level_select, playing, win, quit };
 
+State state = main_menu;
+
 int main(int, void*)
 {
 	if (!cap.isOpened()) {
@@ -77,8 +79,6 @@ int main(int, void*)
 
 	initUI();
 
-	//State state = main_menu;//removed tmp
-
 	while (state == main_menu) {
 		//set gui for the main menu
 		//stuff before the level select button is pressed
@@ -97,6 +97,7 @@ int main(int, void*)
 		while (state == playing) {
 			//set up
 			//game logic here
+			CaptureLoop();
 			//game is won
 			if (true) //win condition here
 				state = win;
@@ -111,7 +112,7 @@ int main(int, void*)
 
 	while (cap.read(frame)) {
 		//when the state is set to game
-		CaptureLoop();
+		
 		if (waitKey(1) == 27)
 			break;
 	}
@@ -581,6 +582,7 @@ void CaptureLoop() {
 			cout << time(NULL) << " - " << startWinTime << endl;
 			if (time(NULL) - startWinTime < winRecognitionDuration) {
 				cout << "You Win" << endl;
+				state = win; //change the game state to win
 			}
 		}
 		else {
