@@ -72,6 +72,8 @@ int main(int, void*)
 	//resizeWindow(markerWindowName, 120, 120);
 
 	initUI();
+	Mat menuBg = Mat(cameraYRes, cameraXRes, CV_8UC3, Scalar(0, 0, 0)); //backgroundImage for main menu
+	Mat levelSelectionBg = Mat(cameraYRes, cameraXRes, CV_8UC3, Scalar(0, 0, 0)); //backgroundImage for levelSelection
 
 	while (cap.read(frame)) {
 
@@ -83,11 +85,11 @@ int main(int, void*)
 
 		//set gui for the main menu
 		if (state == main_menu) {
-			drawButton(finalImage, startButton, levelCount, Vec3b(200, 200, 200), "");
-			drawButton(finalImage, levelButton, levelCount + 1, Vec3b(200, 200, 200), "");
-			drawButton(finalImage, quitButton, levelCount + 3, Vec3b(200, 200, 200), "");
+			drawButton(menuBg, startButton, levelCount, Vec3b(200, 200, 200), "");
+			drawButton(menuBg, levelButton, levelCount + 1, Vec3b(200, 200, 200), "");
+			drawButton(menuBg, quitButton, levelCount + 3, Vec3b(200, 200, 200), "");
 
-			imshow(streamWindowName, finalImage);
+			imshow(streamWindowName, menuBg);
 		}
 
 		//stuff before the level select button is pressed
@@ -100,11 +102,14 @@ int main(int, void*)
 
 		//begin a game
 		else if (state == playing) {
-			//set up
-			drawButton(finalImage, rerollButton, levelCount + 3, Vec3b(200, 200, 200), "");
-			drawButton(finalImage, menuButton, levelCount + 2, Vec3b(200, 200, 200), "");
-			//game logic here
+			//game logic without displaying image
 			CaptureLoop();
+
+			//display Buttons
+			//drawButton(finalImage, rerollButton, levelCount + 3, Vec3b(200, 200, 200), ""); //No quit button in playing state
+			drawButton(finalImage, menuButton, levelCount + 2, Vec3b(200, 200, 200), "");
+
+			imshow(streamWindowName, finalImage);
 		}
 		//game is won
 		else if (state == win) {
@@ -602,7 +607,6 @@ void CaptureLoop() {
 	//updateUI(); //removed since not all ui elements should be called in all states
 	drawGameRectangle();
 	isFirstMarker = true;
-	imshow(streamWindowName, finalImage);
 }
 
 
@@ -851,7 +855,6 @@ void callBackFunc(int event, int x, int y, int flags, void* userdata)
 		//rectangle(finalImage, startButton, Scalar(200, 200, 200), 2);
 	}
 
-	imshow(streamWindowName, finalImage);
 	waitKey(1);
 }
 
