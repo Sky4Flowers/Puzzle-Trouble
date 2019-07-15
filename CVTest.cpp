@@ -3,6 +3,7 @@
 const int thresholdMaxValue = 255;
 const int thresholdMaxType = 4;
 const float markerSize = 0.043;
+const bool cheatingEnabled = true;
 int thresholdValue = 148;
 int thresholdType = 0;
 int adaptiveValue;
@@ -98,6 +99,7 @@ int main(int, void*)
 			//once a level has been selected, change the image matrix to the selected image
 			if (true)//once the back button has been pressed
 				state = main_menu;
+			//to do
 		}
 
 		//begin a game
@@ -116,7 +118,7 @@ int main(int, void*)
 			//freeze frame / other post win logic here
 			imshow(streamWindowName, freezed);
 			drawButton(finalImage, menuButton, levelCount + 2, Vec3b(200, 200, 200), "");
-			//still need to draw the you win title
+			//to do: still need to draw the you win title
 		}
 		else if (state == quit) {
 			break;
@@ -583,7 +585,9 @@ void CaptureLoop() {
 		//cout << "\n";
 
 	}//End of contour loop
-
+	if (cheatingEnabled) {
+		cheatWin();
+	}
 	if (endConfiguration.size() == numberOfPieces && TestEndConfiguration(endConfiguration)) {
 		if (detectingWin) {
 			cout << time(NULL) << " - " << startWinTime << endl;
@@ -863,4 +867,16 @@ int Sign(float x) {
 		return -1;
 	else
 		return 1;
+}
+
+//automatically win if you press spacebar
+void cheatWin()
+{
+	if (waitKey(1) == 32)  //spacebar
+	{
+		cout << "You Win" << endl;
+		state = win; //change the game state to win
+		//freeze image
+		freezed = finalImage;
+	}
 }
