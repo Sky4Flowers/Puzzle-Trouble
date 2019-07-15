@@ -8,8 +8,8 @@ int thresholdType = 0;
 int adaptiveValue;
 int levels = 5;
 
-const int cameraXRes = 1280;
-const int cameraYRes = 720;
+const int cameraXRes = 640;
+const int cameraYRes = 480;
 char* markerWindowName = "MarkerWindow";
 char* streamWindowName = "StreamWindow";
 char* trackbarName = "value";
@@ -73,13 +73,25 @@ int main(int, void*)
 
 	initUI();
 
-	while (state == main_menu) {
+	while (cap.read(frame)) {
+
+		if (waitKey(1) == 27)
+			break;
+		if (couldNotLoadImage) {
+			return -1;
+		}
+
 		//set gui for the main menu
-		drawButton(finalImage, startButton, levelCount, Vec3b(200, 200, 200), "");
-		drawButton(finalImage, levelButton, levelCount + 1, Vec3b(200, 200, 200), "");
-		drawButton(finalImage, quitButton, levelCount + 4, Vec3b(200, 200, 200), "");
+		if (state == main_menu) {
+			drawButton(finalImage, startButton, levelCount, Vec3b(200, 200, 200), "");
+			drawButton(finalImage, levelButton, levelCount + 1, Vec3b(200, 200, 200), "");
+			drawButton(finalImage, quitButton, levelCount + 3, Vec3b(200, 200, 200), "");
+
+			imshow(streamWindowName, finalImage);
+		}
+
 		//stuff before the level select button is pressed
-		while (state == level_select) {
+		else if (state == level_select) {
 			//set gui for level selection
 			//once a level has been selected, change the image matrix to the selected image
 			if (true)//once the back button has been pressed
@@ -87,31 +99,25 @@ int main(int, void*)
 		}
 
 		//begin a game
-		while (state == playing) {
+		else if (state == playing) {
 			//set up
 			drawButton(finalImage, rerollButton, levelCount + 3, Vec3b(200, 200, 200), "");
 			drawButton(finalImage, menuButton, levelCount + 2, Vec3b(200, 200, 200), "");
 			//game logic here
 			CaptureLoop();
-			//game is won
-			while (state == win) {
-				//freeze frame / other post win logic here
-				imshow(streamWindowName, freezed);
-				drawButton(finalImage, menuButton, levelCount + 2, Vec3b(200, 200, 200), "");
-				//still need to draw the you win title
-			}
+		}
+		//game is won
+		else if (state == win) {
+			//freeze frame / other post win logic here
+			imshow(streamWindowName, freezed);
+			drawButton(finalImage, menuButton, levelCount + 2, Vec3b(200, 200, 200), "");
+			//still need to draw the you win title
+		}
+		else if (state == quit) {
+			break;
 		}
 	}
 
-	while (cap.read(frame)) {
-		//when the state is set to game
-		
-		if (waitKey(1) == 27)
-			break;
-		if (couldNotLoadImage) {
-			return -1;
-		}
-	}
 	destroyWindow(streamWindowName);
 	//destroyWindow(markerWindowName);
 	return 0;
@@ -580,7 +586,7 @@ void CaptureLoop() {
 				cout << "You Win" << endl;
 				state = win; //change the game state to win
 				//freeze image
-				freezedImg = finalImage;
+				freezed = finalImage;
 			}
 		}
 		else {
@@ -758,7 +764,7 @@ void initUI() {
 	levelImages[7] = imread("WinTitle.png", CV_LOAD_IMAGE_COLOR);
 
 	levelButtons[0] = Rect(0, 100, 100, 50);
-
+	finalImage = Mat(cameraYRes, cameraXRes, CV_8UC3, Scalar(0, 0, 0));
 	// Setup callback function
 	setMouseCallback(streamWindowName, callBackFunc);
 }
