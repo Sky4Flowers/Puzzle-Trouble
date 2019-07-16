@@ -53,7 +53,7 @@ int main(int, void*)
 	}
 
 	rng.state = time(NULL); //initialize RNG Seed
-	Mat apple = imread("apple.jpg", CV_LOAD_IMAGE_COLOR);
+	Mat apple = imread("images/apple.jpg", CV_LOAD_IMAGE_COLOR);
 	resize(apple, apple, Size(imageSize, imageSize));
 
 	if (!apple.data) {
@@ -689,23 +689,23 @@ Mat RotateImage(Mat &img, float rotAngle) {
 	return rotatedImg;
 }
 void initUI() {
-	startButton = Rect(0, 0, 100, 50);
-	levelButton = Rect(0, 50, 100, 50);
-	menuButton = Rect(0, 100, 100, 50);
-	rerollButton = Rect(0, 150, 100, 50);
-	quitButton = Rect(0, 200, 100, 50);
+	startButton = Rect(200, , 200, 100);
+	levelButton = Rect(200, 50, 200, 100);
+	menuButton = Rect(200, 100, 200, 100);
+	rerollButton = Rect(200, 150, 200, 100);
+	quitButton = Rect(200, 200, 200, 100);
 
 	levelButtons = new Rect[levelCount];
 	levelImages = new Mat[levelCount + 7];
 
-	levelImages[0] = imread("apple.jpg", CV_LOAD_IMAGE_COLOR);
-	levelImages[1] = imread("Button_Play.png", CV_LOAD_IMAGE_COLOR);
-	levelImages[2] = imread("Button_Levels.png", CV_LOAD_IMAGE_COLOR);
-	levelImages[3] = imread("Button_Left_Arrow.png", CV_LOAD_IMAGE_COLOR);
-	levelImages[4] = imread("Quit_Button.png", CV_LOAD_IMAGE_COLOR);
-	levelImages[5] = imread("Button_Empty.png", CV_LOAD_IMAGE_COLOR);
-	levelImages[6] = imread("Title.png", CV_LOAD_IMAGE_COLOR);
-	levelImages[7] = imread("WinTitle.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[0] = imread("images/apple.jpg", CV_LOAD_IMAGE_COLOR);
+	levelImages[1] = imread("images/Button_Play.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[2] = imread("images/Button_Levels.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[3] = imread("images/Button_Left_Arrow.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[4] = imread("images/Quit_Button.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[5] = imread("images/Button_Empty.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[6] = imread("images/Title.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[7] = imread("images/WinTitle.png", CV_LOAD_IMAGE_COLOR);
 
 	levelButtons[0] = Rect(0, 100, 100, 50);
 
@@ -717,9 +717,7 @@ void updateUI() {
 	// The canvas
 	//canvas = Mat3b(finalImage.rows + button.height, finalImage.cols, Vec3b(0, 0, 0));
 
-	// Draw the button
-	//finalImage(startButton) = Vec3b(200, 200, 200);
-	//putText(finalImage(startButton), "Start", Point(startButton.width*0.35, startButton.height*0.7), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0));
+	// Draw the buttons
 	drawButton(finalImage, startButton, levelCount, Vec3b(200, 200, 200), "");
 	drawButton(finalImage, levelButton, levelCount + 1, Vec3b(200, 200, 200), "");
 	drawButton(finalImage, menuButton, levelCount + 2, Vec3b(200, 200, 200), "");
@@ -727,7 +725,7 @@ void updateUI() {
 	drawButton(finalImage, quitButton, levelCount + 4, Vec3b(200, 200, 200), "");
 
 	for (int i = 0; i < levelCount; i++) {
-		//drawButton(finalImage, levelButtons[i], i, Vec3b(200, 200, 200), "Level " + i);
+		drawButton(finalImage, levelButtons[i], i, Vec3b(200, 200, 200), "Level " + i);
 	}
 
 	putText(finalImage, "You won", Point(150, 150), FONT_HERSHEY_SIMPLEX, 2, Scalar(128), 2);
@@ -746,6 +744,7 @@ void drawButton(Mat &display, Rect &button, int textureIndex, Vec3b &color, Stri
 		putText(display(button), buttonText, Point(button.width*0.35, button.height*0.7), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 0));
 	}
 }
+
 void drawGameRectangle() {
 	Point2f point1 = Point2f(imageSize / 2, imageSize / 2), point2 = Point2f(imageSize / 2, finalImage.rows - imageSize / 2),
 		point3 = Point2f(finalImage.cols - imageSize / 2, finalImage.rows - imageSize / 2), point4 = Point2f(finalImage.cols - imageSize / 2, imageSize / 2);
@@ -771,19 +770,19 @@ void callBackFunc(int event, int x, int y, int flags, void* userdata)
 		if (startButton.contains(point))
 		{
 			cout << "Start Clicked!" << endl;
-			rectangle(finalImage(startButton), startButton, Scalar(0, 0, 255), 2);
+			//rectangle(finalImage(startButton), startButton, Scalar(0, 0, 255), 2);
 		}
 		else if (levelButton.contains(point)) {
-			rectangle(finalImage(levelButton), levelButton, Scalar(0, 0, 255), 2);
+			//rectangle(finalImage(levelButton), levelButton, Scalar(0, 0, 255), 2);
 		}
 		else if (menuButton.contains(point)) {
-			rectangle(finalImage(menuButton), menuButton, Scalar(0, 0, 255), 2);
+			//rectangle(finalImage(menuButton), menuButton, Scalar(0, 0, 255), 2);
 		}
 		else if (rerollButton.contains(point)) {
-			rectangle(finalImage(rerollButton), rerollButton, Scalar(0, 0, 255), 2);
+			//rectangle(finalImage(rerollButton), rerollButton, Scalar(0, 0, 255), 2);
 		}
 		else if (quitButton.contains(point)) {
-			rectangle(finalImage(quitButton), quitButton, Scalar(0, 0, 255), 2);
+			//rectangle(finalImage(quitButton), quitButton, Scalar(0, 0, 255), 2);
 		}
 	}
 	if (event == EVENT_LBUTTONUP)
