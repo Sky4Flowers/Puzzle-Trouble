@@ -3,13 +3,14 @@
 const int thresholdMaxValue = 255;
 const int thresholdMaxType = 4;
 const float markerSize = 0.043;
+const bool cheatingEnabled = true;
 int thresholdValue = 148;
 int thresholdType = 0;
 int adaptiveValue;
 int levels = 5;
 
-const int cameraXRes = 1280;
-const int cameraYRes = 720;
+const int cameraXRes = 640;
+const int cameraYRes = 480;
 char* markerWindowName = "MarkerWindow";
 char* streamWindowName = "StreamWindow";
 char* trackbarName = "value";
@@ -17,7 +18,7 @@ char* buttonName = "Normal: 0\n Adaptive: 1";
 char* trackbarWindowName = "TrackbarWindow";
 
 bool isFirstMarker = true;
-
+bool couldNotLoadImage = false;
 VideoCapture cap(0);
 
 vector<Vec4i> hierarchy;
@@ -45,6 +46,14 @@ int levelCount = 1;
 Mat* levelImages;
 Rect* levelButtons;
 
+//enum controls state of game loop
+enum State { main_menu, level_select, playing, win, quit };
+
+State state = main_menu;
+
+//freezed image
+Mat freezed;
+
 int main(int, void*)
 {
 	if (!cap.isOpened()) {
@@ -52,36 +61,72 @@ int main(int, void*)
 		return -1;
 	}
 
-	rng.state = time(NULL); //initialize RNG Seed
-	Mat apple = imread("images/apple.jpg", CV_LOAD_IMAGE_COLOR);
-	resize(apple, apple, Size(imageSize, imageSize));
-
-	if (!apple.data) {
-		cout << "Could not open apple.jpg" << endl;
-		return -1;
-	}
-
-	CreatePuzzlePieces(apple); //slice up the image
-
-	namedWindow(streamWindowName, CV_WINDOW_AUTOSIZE);
+	createPuzzle("apple");
+	namedWindow(streamWindowName, CV_WINDOW_FULLSCREEN);
 	/*createTrackbar(trackbarName,
 		streamWindowName, &thresholdValue,
 		thresholdMaxValue, on_trackbar, &thresholdValue);
 	createTrackbar(buttonName, streamWindowName, &adaptiveValue, 1, on_trackbar, &adaptiveValue);
 
 	createTrackbar("levels+3", streamWindowName, &levels, 7, on_trackbar, &levels);*/
-	namedWindow(markerWindowName, CV_WINDOW_NORMAL);
-	resizeWindow(markerWindowName, 120, 120);
+	//namedWindow(markerWindowName, CV_WINDOW_NORMAL);
+	//resizeWindow(markerWindowName, 120, 120);
 
 	initUI();
+	Mat menuBg = Mat(cameraYRes, cameraXRes, CV_8UC3, Scalar(0, 0, 0)); //backgroundImage for main menu
+	Mat levelSelectionBg = Mat(cameraYRes, cameraXRes, CV_8UC3, Scalar(0, 0, 0)); //backgroundImage for levelSelection
 
 	while (cap.read(frame)) {
-		CaptureLoop();
+
 		if (waitKey(1) == 27)
 			break;
+		if (couldNotLoadImage) {
+			return -1;
+		}
+
+		//set gui for the main menu
+		if (state == main_menu) {
+			drawButton(menuBg, startButton, levelCount, Vec3b(200, 200, 200), "");
+			drawButton(menuBg, levelButton, levelCount + 1, Vec3b(200, 200, 200), "");
+			drawButton(menuBg, quitButton, levelCount + 3, Vec3b(200, 200, 200), "");
+
+			imshow(streamWindowName, menuBg);
+		}
+
+		//stuff before the level select button is pressed
+		else if (state == level_select) {
+			//set gui for level selection
+			//once a level has been selected, change the image matrix to the selected image
+			if (true)//once the back button has been pressed
+				state = main_menu;
+			//to do
+		}
+
+		//begin a game
+		else if (state == playing) {
+			//game logic without displaying image
+			CaptureLoop();
+
+			//display Buttons
+			//drawButton(finalImage, rerollButton, levelCount + 3, Vec3b(200, 200, 200), ""); //No quit button in playing state
+			drawButton(finalImage, menuButton, levelCount + 2, Vec3b(200, 200, 200), "");
+
+			imshow(streamWindowName, finalImage);
+		}
+		//game is won
+		else if (state == win) {
+			//freeze frame / other post win logic here
+			imshow(streamWindowName, freezed);
+			drawButton(finalImage, menuButton, levelCount + 2, Vec3b(200, 200, 200), "");
+			//to do: still need to draw the you win title
+		}
+		else if (state == quit) {
+			break;
+		}
 	}
+
 	destroyWindow(streamWindowName);
-	destroyWindow(markerWindowName);
+	//destroyWindow(markerWindowName);
 	return 0;
 }
 
@@ -468,7 +513,7 @@ void CaptureLoop() {
 		//cout << markerIds[code] << endl;
 		// Show the first detected marker in the image
 		if (isFirstMarker) {
-			imshow(markerWindowName, markerImage);
+			//imshow(markerWindowName, markerImage);
 			isFirstMarker = false;
 		}
 
@@ -540,12 +585,17 @@ void CaptureLoop() {
 		//cout << "\n";
 
 	}//End of contour loop
-
+	if (cheatingEnabled) {
+		cheatWin();
+	}
 	if (endConfiguration.size() == numberOfPieces && TestEndConfiguration(endConfiguration)) {
 		if (detectingWin) {
 			cout << time(NULL) << " - " << startWinTime << endl;
 			if (time(NULL) - startWinTime < winRecognitionDuration) {
 				cout << "You Win" << endl;
+				state = win; //change the game state to win
+				//freeze image
+				freezed = finalImage;
 			}
 		}
 		else {
@@ -558,10 +608,9 @@ void CaptureLoop() {
 	}
 
 	//Add UI
-	updateUI();
+	//updateUI(); //removed since not all ui elements should be called in all states
 	drawGameRectangle();
 	isFirstMarker = true;
-	imshow(streamWindowName, finalImage);
 }
 
 
@@ -688,6 +737,21 @@ Mat RotateImage(Mat &img, float rotAngle) {
 	cv::warpAffine(img, rotatedImg, rotationMatrix, bbox.size());
 	return rotatedImg;
 }
+
+void createPuzzle(string puzzleName) {
+	rng.state = time(NULL); //initialize RNG Seed
+	Mat apple = imread(puzzleName + ".jpg", CV_LOAD_IMAGE_COLOR);
+
+	if (!apple.data) {
+		cout << "Could not open " + puzzleName + ".jpg" << endl;
+		couldNotLoadImage = true;
+		return;
+	}
+
+	resize(apple, apple, Size(imageSize, imageSize));
+
+	CreatePuzzlePieces(apple); //slice up the image
+}
 void initUI() {
 	startButton = Rect(200, , 200, 100);
 	levelButton = Rect(200, 50, 200, 100);
@@ -708,7 +772,7 @@ void initUI() {
 	levelImages[7] = imread("images/WinTitle.png", CV_LOAD_IMAGE_COLOR);
 
 	levelButtons[0] = Rect(0, 100, 100, 50);
-
+	finalImage = Mat(cameraYRes, cameraXRes, CV_8UC3, Scalar(0, 0, 0));
 	// Setup callback function
 	setMouseCallback(streamWindowName, callBackFunc);
 }
@@ -767,22 +831,26 @@ void callBackFunc(int event, int x, int y, int flags, void* userdata)
 	if (event == EVENT_LBUTTONDOWN)
 	{
 		Point point = Point(x, y);
-		if (startButton.contains(point))
+		if (startButton.contains(point) && state == main_menu)
 		{
 			cout << "Start Clicked!" << endl;
-			//rectangle(finalImage(startButton), startButton, Scalar(0, 0, 255), 2);
+			rectangle(finalImage(startButton), startButton, Scalar(0, 0, 255), 2);
+			state = playing;
 		}
-		else if (levelButton.contains(point)) {
-			//rectangle(finalImage(levelButton), levelButton, Scalar(0, 0, 255), 2);
+		else if (levelButton.contains(point) && state == main_menu) {
+			rectangle(finalImage(levelButton), levelButton, Scalar(0, 0, 255), 2);
+			state = level_select;
 		}
-		else if (menuButton.contains(point)) {
-			//rectangle(finalImage(menuButton), menuButton, Scalar(0, 0, 255), 2);
+		else if (menuButton.contains(point) && (state == playing || state == level_select || state == win)) {
+			rectangle(finalImage(menuButton), menuButton, Scalar(0, 0, 255), 2);
+			state = main_menu;
 		}
-		else if (rerollButton.contains(point)) {
-			//rectangle(finalImage(rerollButton), rerollButton, Scalar(0, 0, 255), 2);
+		else if (rerollButton.contains(point) && state == playing) {
+			rectangle(finalImage(rerollButton), rerollButton, Scalar(0, 0, 255), 2);
 		}
-		else if (quitButton.contains(point)) {
-			//rectangle(finalImage(quitButton), quitButton, Scalar(0, 0, 255), 2);
+		else if (quitButton.contains(point) && state == main_menu) {
+			rectangle(finalImage(quitButton), quitButton, Scalar(0, 0, 255), 2);
+			state = quit;
 		}
 	}
 	if (event == EVENT_LBUTTONUP)
@@ -790,7 +858,6 @@ void callBackFunc(int event, int x, int y, int flags, void* userdata)
 		//rectangle(finalImage, startButton, Scalar(200, 200, 200), 2);
 	}
 
-	imshow(streamWindowName, finalImage);
 	waitKey(1);
 }
 
@@ -799,4 +866,16 @@ int Sign(float x) {
 		return -1;
 	else
 		return 1;
+}
+
+//automatically win if you press spacebar
+void cheatWin()
+{
+	if (waitKey(1) == 32)  //spacebar
+	{
+		cout << "You Win" << endl;
+		state = win; //change the game state to win
+		//freeze image
+		freezed = finalImage;
+	}
 }
