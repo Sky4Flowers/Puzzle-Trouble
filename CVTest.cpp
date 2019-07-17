@@ -61,7 +61,7 @@ int main(int, void*)
 		return -1;
 	}
 
-	createPuzzle("apple");
+	createPuzzle("images/apple");
 	namedWindow(streamWindowName, CV_WINDOW_FULLSCREEN);
 	/*createTrackbar(trackbarName,
 		streamWindowName, &thresholdValue,
@@ -613,8 +613,6 @@ void CaptureLoop() {
 	isFirstMarker = true;
 }
 
-
-
 void DrawPuzzlePiece(Mat puzzlePiece, float xPos, float yPos, float rotAngle) {
 	Mat rotatedPuzzlePiece = RotateImage(puzzlePiece, rotAngle);
 	if (xPos - rotatedPuzzlePiece.cols / 2 > 0 && xPos + rotatedPuzzlePiece.cols / 2 < finalImage.cols &&
@@ -752,12 +750,13 @@ void createPuzzle(string puzzleName) {
 
 	CreatePuzzlePieces(apple); //slice up the image
 }
+
 void initUI() {
-	startButton = Rect(200, , 200, 100);
-	levelButton = Rect(200, 50, 200, 100);
-	menuButton = Rect(200, 100, 200, 100);
-	rerollButton = Rect(200, 150, 200, 100);
-	quitButton = Rect(200, 200, 200, 100);
+	startButton = Rect(420, 250, 150, 75);
+	levelButton = Rect(50, 250, 150, 75);
+	menuButton = Rect(5, 5, 50, 25);
+	rerollButton = Rect(0, 80, 150, 75);
+	quitButton = Rect(50, 350, 150, 75);
 
 	levelButtons = new Rect[levelCount];
 	levelImages = new Mat[levelCount + 7];
