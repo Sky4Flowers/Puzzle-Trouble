@@ -62,7 +62,6 @@ int main(int, void*)
 		return -1;
 	}
 
-	createPuzzle("images/apple");
 	namedWindow(streamWindowName, CV_WINDOW_FULLSCREEN);
 	/*createTrackbar(trackbarName,
 		streamWindowName, &thresholdValue,
@@ -119,7 +118,7 @@ int main(int, void*)
 		else if (state == win) {
 			//freeze frame / other post win logic here
 			imshow(streamWindowName, freezed);
-			drawButton(finalImage, menuButton, levelCount + 2, Vec3b(200, 200, 200), "");
+			drawButton(freezed, menuButton, levelCount + 2, Vec3b(200, 200, 200), "");
 			//to do: still need to draw the you win title
 		}
 		else if (state == quit) {
@@ -679,6 +678,7 @@ Mat CreateMask(const Size &size, const vector<Point2f> &_pts) {
 void CreatePuzzlePieces(Mat &img) {
 	Size imageSize = img.size();
 	VoronoiImageSlicing(imageSize);
+	puzzlePieces.clear();
 	for (int i = 0; i < numberOfPieces; i++) {
 		Mat dst;
 		Mat mask = CreateMask(img.size(), voronoiMasks[i]);
@@ -736,34 +736,25 @@ Mat RotateImage(Mat &img, float rotAngle) {
 }
 
 void winGame() {
+	freezed = Mat(cameraYRes, cameraXRes, CV_8UC3, Scalar(0, 0, 0)); //backgroundImage for main menu
 	cout << "You Win" << endl;
 	state = win; //change the game state to win
-	//freeze image
-	//freezed = finalImage;
-	cvtColor(finalImage, freezed, CV_BGR2GRAY);
-	//add the win title to the image
-	Mat win_title = imread("images/WinTitle_Orange.png", CV_LOAD_IMAGE_COLOR);
-	win_title.resize(100,100);
-	Mat dst = freezed(Rect(100, 100, win_title.cols, win_title.rows));
-	cout << "´test" << endl;
-	dst.copyTo(freezed);
 
-	freezed.resize(finalImage.cols, finalImage.rows);
+	//cvtColor(finalImage, freezed, CV_BGR2GRAY);//for bw does not work 
+	finalImage.copyTo(freezed);
+	//add the win title to the image
+
+	Mat win_title = imread("images/WinTitle_Orange.png", CV_LOAD_IMAGE_COLOR);
+	win_title.copyTo(freezed, win_title != 0);
+
 	//win_title.copyTo(freezed(Rect(50, 50, win_title.cols, win_title.rows))); // check this
 }
-void createPuzzle(string puzzleName) {
+void createPuzzle(int levelID) {
 	rng.state = time(NULL); //initialize RNG Seed
-	Mat apple = imread(puzzleName + ".jpg", CV_LOAD_IMAGE_COLOR);
 
-	if (!apple.data) {
-		cout << "Could not open " + puzzleName + ".jpg" << endl;
-		couldNotLoadImage = true;
-		return;
-	}
+	resize(levelImages[levelID], levelImages[levelID], Size(imageSize, imageSize));
 
-	resize(apple, apple, Size(imageSize, imageSize));
-
-	CreatePuzzlePieces(apple); //slice up the image
+	CreatePuzzlePieces(levelImages[levelID]); //slice up the image
 }
 
 void initUI() {
@@ -859,13 +850,14 @@ void drawGameRectangle() {
 
 void callBackFunc(int event, int x, int y, int flags, void* userdata)
 {
-	if (event == EVENT_LBUTTONDOWN)
+	if (event == EVENT_LBUTTONUP)
 	{
 		Point point = Point(x, y);
 		if (startButton.contains(point) && state == main_menu)
 		{
 			cout << "Start Clicked!" << endl;
 			rectangle(finalImage(startButton), startButton, Scalar(0, 0, 255), 2);
+			createPuzzle(5);
 			state = playing;
 		}
 		else if (levelButton.contains(point) && state == main_menu) {
@@ -882,6 +874,15 @@ void callBackFunc(int event, int x, int y, int flags, void* userdata)
 		else if (quitButton.contains(point) && state == main_menu) {
 			rectangle(finalImage(quitButton), quitButton, Scalar(0, 0, 255), 2);
 			state = quit;
+		}
+		else {
+			for (int i = 0; i < levelCount; i++) {
+				if (levelButtons[i].contains(point) && state == level_select) {
+					createPuzzle(i);
+					state = playing;
+					break;
+				}
+			}
 		}
 	}
 	if (event == EVENT_LBUTTONUP)
