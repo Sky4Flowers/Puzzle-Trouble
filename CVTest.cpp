@@ -599,7 +599,11 @@ void CaptureLoop() {
 				cout << "You Win" << endl;
 				state = win; //change the game state to win
 				//freeze image
-				freezed = finalImage;
+				//freezed = finalImage;
+				cvtColor(finalImage, freezed, CV_BGR2GRAY);
+				//add the win title to the image
+				Mat win_title = imread("images/WinTitle_Orange.png", CV_LOAD_IMAGE_COLOR);
+				win_title.copyTo(freezed(Rect(50, 50, win_title.cols, win_title.rows))); // check this
 			}
 		}
 		else {
