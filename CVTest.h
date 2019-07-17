@@ -30,6 +30,7 @@ Mat TranslateImage(Mat &img, int offsetx, int offsety);
 Mat RotateImage(Mat &img, float rotAngle);
 bool TestEndConfiguration(const std::map<int, Point2f> &endconfig);
 void createPuzzle(string puzzleName);
+void winGame();
 void initUI();
 void drawLevelSelection();
 void updateUI();

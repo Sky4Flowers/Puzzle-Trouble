@@ -42,7 +42,7 @@ Rect menuButton;
 Rect rerollButton;
 Rect quitButton;
 
-int levelCount = 1;
+int levelCount = 6;
 Mat* levelImages;
 Rect* levelButtons;
 
@@ -54,8 +54,6 @@ State state = main_menu;
 //freezed image
 Mat freezed;
 Mat levelSelectionBg;
-vector<Mat> levelSelectionImages;
-vector<Rect> levelSelectionButtons;
 
 int main(int, void*)
 {
@@ -596,14 +594,7 @@ void CaptureLoop() {
 		if (detectingWin) {
 			cout << time(NULL) << " - " << startWinTime << endl;
 			if (time(NULL) - startWinTime < winRecognitionDuration) {
-				cout << "You Win" << endl;
-				state = win; //change the game state to win
-				//freeze image
-				//freezed = finalImage;
-				cvtColor(finalImage, freezed, CV_BGR2GRAY);
-				//add the win title to the image
-				Mat win_title = imread("images/WinTitle_Orange.png", CV_LOAD_IMAGE_COLOR);
-				win_title.copyTo(freezed(Rect(50, 50, win_title.cols, win_title.rows))); // check this
+				winGame();
 			}
 		}
 		else {
@@ -744,6 +735,22 @@ Mat RotateImage(Mat &img, float rotAngle) {
 	return rotatedImg;
 }
 
+void winGame() {
+	cout << "You Win" << endl;
+	state = win; //change the game state to win
+	//freeze image
+	//freezed = finalImage;
+	cvtColor(finalImage, freezed, CV_BGR2GRAY);
+	//add the win title to the image
+	Mat win_title = imread("images/WinTitle_Orange.png", CV_LOAD_IMAGE_COLOR);
+	win_title.resize(100,100);
+	Mat dst = freezed(Rect(100, 100, win_title.cols, win_title.rows));
+	cout << "´test" << endl;
+	dst.copyTo(freezed);
+
+	freezed.resize(finalImage.cols, finalImage.rows);
+	//win_title.copyTo(freezed(Rect(50, 50, win_title.cols, win_title.rows))); // check this
+}
 void createPuzzle(string puzzleName) {
 	rng.state = time(NULL); //initialize RNG Seed
 	Mat apple = imread(puzzleName + ".jpg", CV_LOAD_IMAGE_COLOR);
@@ -760,9 +767,7 @@ void createPuzzle(string puzzleName) {
 }
 
 void initUI() {
-	for (int i = 0; i < 6; i++) {
-		levelSelectionButtons.push_back(Rect(50 +  190 * (i % 3), 300 + 70 * (i / 3), 150, 75));
-	}
+	
 	startButton = Rect(50, 350, 150, 75);
 	levelButton = Rect(235, 350, 150, 75);
 	menuButton = Rect(5, 5, 50, 25);
@@ -771,20 +776,26 @@ void initUI() {
 
 	levelButtons = new Rect[levelCount];
 	levelImages = new Mat[levelCount + 9];
-
-	levelImages[0] = imread("images/apple.jpg", CV_LOAD_IMAGE_COLOR);
-	levelImages[1] = imread("images/Button_Play.png", CV_LOAD_IMAGE_COLOR);
-	levelImages[2] = imread("images/Button_Levels.png", CV_LOAD_IMAGE_COLOR);
-	levelImages[3] = imread("images/Button_Left_Arrow.png", CV_LOAD_IMAGE_COLOR);
-	levelImages[4] = imread("images/Quit_Button.png", CV_LOAD_IMAGE_COLOR);
-	levelImages[5] = imread("images/Button_Empty.png", CV_LOAD_IMAGE_COLOR);
-	levelImages[6] = imread("images/Title.png", CV_LOAD_IMAGE_COLOR);
-	levelImages[7] = imread("images/WinTitle.png", CV_LOAD_IMAGE_COLOR);
-	levelImages[8] = imread("images/title_background.png", CV_LOAD_IMAGE_COLOR);
-	levelImages[9] = imread("images/title_text.png", CV_LOAD_IMAGE_COLOR);
-	levelImages[8].resize(cameraYRes, cameraXRes);
-	levelImages[9].resize(cameraYRes, cameraXRes);
-	levelButtons[0] = Rect(0, 100, 100, 50);
+	for (int i = 0; i < 6; i++) {
+		levelButtons[i] = Rect(49 + 94 * i, 340, 75, 75);
+	}
+	levelImages[0] = imread("images/puzzle_0.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[1] = imread("images/puzzle_1.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[2] = imread("images/puzzle_2.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[3] = imread("images/puzzle_3.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[4] = imread("images/puzzle_4.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[5] = imread("images/puzzle_5.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[levelCount] = imread("images/Button_Play.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[levelCount+1] = imread("images/Button_Levels.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[levelCount + 2] = imread("images/Button_Left_Arrow.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[levelCount + 3] = imread("images/Quit_Button.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[levelCount + 4] = imread("images/Button_Empty.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[levelCount + 5] = imread("images/Title.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[levelCount + 6] = imread("images/WinTitle.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[levelCount + 7] = imread("images/title_background.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[levelCount + 8] = imread("images/title_text.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[levelCount + 7].resize(cameraYRes, cameraXRes);
+	levelImages[levelCount + 8].resize(cameraYRes, cameraXRes);
 	finalImage = Mat(cameraYRes, cameraXRes, CV_8UC3, Scalar(0, 0, 0));
 	// Setup callback function
 	setMouseCallback(streamWindowName, callBackFunc);
@@ -792,7 +803,7 @@ void initUI() {
 
 void drawLevelSelection() {
 	for (int i = 0; i < 6; i++) {
-		drawButton(levelSelectionBg, levelSelectionButtons[i], levelCount, Vec3b(200, 200, 200), "");
+		drawButton(levelSelectionBg, levelButtons[i], i, Vec3b(200, 200, 200), "");
 	}
 	drawButton(levelSelectionBg, menuButton, levelCount + 2, Vec3b(200, 200, 200), "");
 }
@@ -893,9 +904,6 @@ void cheatWin()
 {
 	if (waitKey(1) == 32)  //spacebar
 	{
-		cout << "You Win" << endl;
-		state = win; //change the game state to win
-		//freeze image
-		freezed = finalImage;
+		winGame();
 	}
 }
