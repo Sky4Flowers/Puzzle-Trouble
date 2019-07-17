@@ -31,6 +31,7 @@ Mat RotateImage(Mat &img, float rotAngle);
 bool TestEndConfiguration(const std::map<int, Point2f> &endconfig);
 void createPuzzle(string puzzleName);
 void initUI();
+void drawLevelSelection();
 void updateUI();
 void drawGameRectangle();
 void drawButton(Mat &display, Rect &button, int textureIndex, Vec3b &position, String buttonText);

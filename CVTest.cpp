@@ -53,6 +53,9 @@ State state = main_menu;
 
 //freezed image
 Mat freezed;
+Mat levelSelectionBg;
+vector<Mat> levelSelectionImages;
+vector<Rect> levelSelectionButtons;
 
 int main(int, void*)
 {
@@ -74,8 +77,10 @@ int main(int, void*)
 
 	initUI();
 	Mat menuBg = Mat(cameraYRes, cameraXRes, CV_8UC3, Scalar(0, 0, 0)); //backgroundImage for main menu
-	Mat levelSelectionBg = Mat(cameraYRes, cameraXRes, CV_8UC3, Scalar(0, 0, 0)); //backgroundImage for levelSelection
-
+	levelImages[levelCount + 7].copyTo(menuBg);
+	levelImages[levelCount + 8].copyTo(menuBg, levelImages[levelCount + 8] != 0);
+	levelSelectionBg = menuBg.clone();
+	
 	while (cap.read(frame)) {
 
 		if (waitKey(1) == 27)
@@ -97,9 +102,8 @@ int main(int, void*)
 		else if (state == level_select) {
 			//set gui for level selection
 			//once a level has been selected, change the image matrix to the selected image
-			if (true)//once the back button has been pressed
-				state = main_menu;
-			//to do
+			drawLevelSelection();
+			imshow(streamWindowName, levelSelectionBg);
 		}
 
 		//begin a game
@@ -752,14 +756,17 @@ void createPuzzle(string puzzleName) {
 }
 
 void initUI() {
-	startButton = Rect(420, 250, 150, 75);
-	levelButton = Rect(50, 250, 150, 75);
+	for (int i = 0; i < 6; i++) {
+		levelSelectionButtons.push_back(Rect(50 +  190 * (i % 3), 300 + 70 * (i / 3), 150, 75));
+	}
+	startButton = Rect(50, 350, 150, 75);
+	levelButton = Rect(235, 350, 150, 75);
 	menuButton = Rect(5, 5, 50, 25);
 	rerollButton = Rect(0, 80, 150, 75);
-	quitButton = Rect(50, 350, 150, 75);
+	quitButton = Rect(420, 350, 150, 75);
 
 	levelButtons = new Rect[levelCount];
-	levelImages = new Mat[levelCount + 7];
+	levelImages = new Mat[levelCount + 9];
 
 	levelImages[0] = imread("images/apple.jpg", CV_LOAD_IMAGE_COLOR);
 	levelImages[1] = imread("images/Button_Play.png", CV_LOAD_IMAGE_COLOR);
@@ -769,11 +776,21 @@ void initUI() {
 	levelImages[5] = imread("images/Button_Empty.png", CV_LOAD_IMAGE_COLOR);
 	levelImages[6] = imread("images/Title.png", CV_LOAD_IMAGE_COLOR);
 	levelImages[7] = imread("images/WinTitle.png", CV_LOAD_IMAGE_COLOR);
-
+	levelImages[8] = imread("images/title_background.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[9] = imread("images/title_text.png", CV_LOAD_IMAGE_COLOR);
+	levelImages[8].resize(cameraYRes, cameraXRes);
+	levelImages[9].resize(cameraYRes, cameraXRes);
 	levelButtons[0] = Rect(0, 100, 100, 50);
 	finalImage = Mat(cameraYRes, cameraXRes, CV_8UC3, Scalar(0, 0, 0));
 	// Setup callback function
 	setMouseCallback(streamWindowName, callBackFunc);
+}
+
+void drawLevelSelection() {
+	for (int i = 0; i < 6; i++) {
+		drawButton(levelSelectionBg, levelSelectionButtons[i], levelCount, Vec3b(200, 200, 200), "");
+	}
+	drawButton(levelSelectionBg, menuButton, levelCount + 2, Vec3b(200, 200, 200), "");
 }
 
 void updateUI() {
