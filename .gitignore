@@ -1,7 +1,10 @@
 #ignore everything
 *
 
-!Build/
+!*.exe
+!*.iobj
+!*.ipdb
+!*.pdb
 !.gitignore
 !*.h
 !*.cpp
