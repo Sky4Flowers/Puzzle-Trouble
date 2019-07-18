@@ -744,8 +744,21 @@ void winGame() {
 	finalImage.copyTo(freezed);
 	//add the win title to the image
 
-	Mat win_title = imread("images/WinTitle_Orange.png", CV_LOAD_IMAGE_COLOR);
-	win_title.copyTo(freezed, win_title != 0);
+	Mat win_title = imread("images/WinTitle_Orange.png", -1);
+
+	Mat mask;
+	vector<Mat> rgbLayer;
+	split(win_title, rgbLayer);
+
+	if (win_title.channels() == 4)
+	{
+		split(win_title, rgbLayer);
+		Mat cs[3] = { rgbLayer[0],rgbLayer[1],rgbLayer[2] };
+		merge(cs, 3, win_title);
+		mask = rgbLayer[3];
+	}
+
+	win_title.copyTo(freezed, mask);
 
 	//win_title.copyTo(freezed(Rect(50, 50, win_title.cols, win_title.rows))); // check this
 }
